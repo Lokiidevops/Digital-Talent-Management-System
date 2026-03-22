@@ -10,6 +10,7 @@ app.use(cors({ origin: "http://localhost:3000" }));
 app.use(express.json());
 
 app.use("/api/auth", require("./routes/authRoutes"));
+app.use("/api/auth", require("./routes/forgotRoutes"));
 
 app.get("/", (req, res) => res.json({ message: "API running" }));
 

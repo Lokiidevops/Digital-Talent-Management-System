@@ -54,19 +54,25 @@ const Login = () => {
           <span
             className="brand-name"
             style={{
-              fontSize: "1.6rem",
+              fontSize: "1.8rem",
               letterSpacing: "0.08em",
               color: "#0d1117",
+              fontFamily: "'Plus Jakarta Sans', sans-serif",
               textDecoration: "none",
               borderBottom: "none",
             }}
           >
-            DTMS
+            Digital Talent Management System
+            <ul></ul>
           </span>
         </div>
 
-        <h2>Welcome back</h2>
-        <p className="sub">Sign in to continue to your account.</p>
+        <h2 style={{ fontSize: "1.4rem", marginBottom: "4px" }}>
+          Welcome back
+        </h2>
+        <p className="sub" style={{ marginBottom: "20px" }}>
+          Sign in to continue to your account.
+        </p>
 
         {error && <div className="msg error">{error}</div>}
         {success && <div className="msg success">{success}</div>}
@@ -95,6 +101,7 @@ const Login = () => {
                 onChange={handleChange}
                 required
                 style={{ paddingRight: "44px" }}
+                autoComplete="current-password"
               />
               <span
                 onClick={() => setShowPassword(!showPassword)}
@@ -176,15 +183,16 @@ const Login = () => {
           <div style={{ flex: 1, height: "1px", background: "#e0e0d8" }}></div>
         </div>
 
-        <GoogleLogin
-          onSuccess={handleGoogleSuccess}
-          onError={handleGoogleError}
-          width="360"
-          text="continue_with"
-          shape="rectangular"
-          theme="outline"
-        />
-
+        <div style={{ display: "flex", justifyContent: "center" }}>
+          <GoogleLogin
+            onSuccess={handleGoogleSuccess}
+            onError={handleGoogleError}
+            width="360"
+            text="continue_with"
+            shape="rectangular"
+            theme="outline"
+          />
+        </div>
         <div className="switch-link" style={{ marginTop: "20px" }}>
           Don't have an account? <Link to="/register">Register one</Link>
         </div>

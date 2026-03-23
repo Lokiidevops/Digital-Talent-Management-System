@@ -71,7 +71,7 @@ const ForgotPassword = () => {
       <div className="auth-card">
         <div
           className="brand"
-          style={{ justifyContent: "center", marginBottom: "28px" }}
+          style={{ justifyContent: "center", marginBottom: "5px" }}
         >
           <span
             className="brand-name"
@@ -80,9 +80,7 @@ const ForgotPassword = () => {
               letterSpacing: "0.08em",
               color: "#1a1a2e",
             }}
-          >
-            DTMS
-          </span>
+          ></span>
         </div>
 
         {/* Step 1 - Email */}

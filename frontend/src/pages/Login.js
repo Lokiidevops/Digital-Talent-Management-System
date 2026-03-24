@@ -27,7 +27,7 @@ const Login = () => {
       localStorage.setItem("token", res.data.token);
       localStorage.setItem("user", JSON.stringify(res.data.user));
       setSuccess("Login successful! Redirecting...");
-      setTimeout(() => navigate("/dashboard"), 1200);
+      navigate("/dashboard");
     } catch (err) {
       setError(err.response?.data?.message || "Invalid email or password.");
     } finally {
@@ -37,7 +37,8 @@ const Login = () => {
 
   const handleGoogleSuccess = (res) => {
     console.log("Google Success:", res);
-    alert("Google login successful!");
+    localStorage.setItem("googleUser", JSON.stringify(res));
+    navigate("/dashboard");
   };
 
   const handleGoogleError = () => {
@@ -67,7 +68,14 @@ const Login = () => {
           </span>
         </div>
 
-        <h2 style={{ fontSize: "1.4rem", marginBottom: "4px" }}>
+        <h2
+          style={{
+            fontSize: "1.4rem",
+            marginBottom: "4px",
+            marginTop: "-4px",
+            fontFamily: "'Plus Jakarta Sans', sans-serif",
+          }}
+        >
           Welcome back
         </h2>
         <p className="sub" style={{ marginBottom: "20px" }}>

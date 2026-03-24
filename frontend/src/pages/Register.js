@@ -74,7 +74,12 @@ const Register = () => {
         </div>
 
         <h2
-          style={{ fontSize: "1.6rem", marginBottom: "4px", marginTop: "0px" }}
+          style={{
+            fontSize: "1.4rem",
+            marginBottom: "4px",
+            marginTop: "-4px",
+            fontFamily: "'Plus Jakarta Sans', sans-serif",
+          }}
         >
           Create your account
         </h2>

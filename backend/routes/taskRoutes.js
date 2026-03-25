@@ -1,10 +1,22 @@
 const express = require("express");
 const router = express.Router();
-const taskController = require("../controllers/taskController");
 
-router.get("/", taskController.getTasks);
-router.post("/", taskController.createTask);
-router.put("/:id", taskController.updateTask);
-router.delete("/:id", taskController.deleteTask);
+const {
+  createTask,
+  getTasks,
+  updateTask,
+  deleteTask,
+  submitTask,
+} = require("../controllers/taskController");
+
+// Admin (create/edit/delete)
+router.post("/", createTask);
+router.put("/:id", updateTask);
+router.delete("/:id", deleteTask);
+
+// User / general (view + submit)
+router.get("/", getTasks);
+router.post("/submit/:id", submitTask);
 
 module.exports = router;
+

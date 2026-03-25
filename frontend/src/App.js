@@ -4,6 +4,8 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import Register from "./pages/Register";
 import Login from "./pages/Login";
 import ForgotPassword from "./pages/ForgotPassword";
+import CreateTask from "./pages/CreateTask";
+import Tasks from "./pages/Task";
 
 function App() {
   return (
@@ -14,13 +16,12 @@ function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/dashboard" element={<Dashboard />} />
-        <Route path="*" element={<Navigate to="/Register" replace />} />
+        <Route path="/tasks" element={<Tasks />} />
+        <Route path="/tasks/create" element={<CreateTask />} />
+        <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
     </BrowserRouter>
   );
 }
 
 export default App;
-export const forgotPassword = (data) => API.post("/auth/forgot-password", data);
-export const verifyOTP = (data) => API.post("/auth/verify-otp", data);
-export const resetPassword = (data) => API.post("/auth/reset-password", data);

@@ -14,7 +14,6 @@ const ForgotPassword = () => {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
-  // Step 1 — Send OTP
   const handleSendOTP = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -31,7 +30,6 @@ const ForgotPassword = () => {
     }
   };
 
-  // Step 2 — Verify OTP
   const handleVerifyOTP = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -48,7 +46,6 @@ const ForgotPassword = () => {
     }
   };
 
-  // Step 3 — Reset Password
   const handleReset = async (e) => {
     e.preventDefault();
     if (newPassword !== confirmPass) return setError("Passwords do not match");
@@ -83,7 +80,6 @@ const ForgotPassword = () => {
           ></span>
         </div>
 
-        {/* Step 1 - Email */}
         {step === 1 && (
           <>
             <h2>Forgot Password</h2>
@@ -108,7 +104,6 @@ const ForgotPassword = () => {
           </>
         )}
 
-        {/* Step 2 - OTP */}
         {step === 2 && (
           <>
             <h2>Enter OTP</h2>
@@ -199,7 +194,6 @@ const ForgotPassword = () => {
           </>
         )}
 
-        {/* Step 3 - New Password */}
         {step === 3 && (
           <>
             <h2>Reset Password</h2>

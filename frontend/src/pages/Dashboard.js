@@ -58,13 +58,15 @@ function Dashboard() {
         </div>
       </div>
 
-      <h2 className="ws-page-title" style={{ fontSize: "1.15rem", marginBottom: "0.75rem" }}>
+      <h2
+        className="ws-page-title"
+        style={{ fontSize: "1.15rem", marginBottom: "0.75rem" }}
+      >
         Recent tasks
       </h2>
       {tasks.length === 0 ? (
         <div className="ws-empty">
-          No tasks yet.{" "}
-          <Link to="/tasks/create">Create your first task</Link>.
+          No tasks yet. <Link to="/tasks/create">Create your first task</Link>.
         </div>
       ) : (
         <div className="ws-card ws-recent">

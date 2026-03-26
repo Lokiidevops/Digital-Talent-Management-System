@@ -1,10 +1,28 @@
-import React from "react";
-import { NavLink, Link } from "react-router-dom";
+import React, { useEffect, useState } from "react";
+import { NavLink, Link, useNavigate } from "react-router-dom";
 import "../styles/workspace.css";
+import ProfileMenu from "./ProfileMenu";
 
 function TaskLayout({ title, subtitle, children }) {
+  const navigate = useNavigate();
+
+  const [theme, setTheme] = useState(() => {
+    return localStorage.getItem("dtms-theme") || "light";
+  });
+
+  useEffect(() => {
+    localStorage.setItem("dtms-theme", theme);
+  }, [theme]);
+
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
+    localStorage.removeItem("googleUser");
+    navigate("/login");
+  };
+
   return (
-    <div className="ws-root">
+    <div className="ws-root" data-theme={theme}>
       <aside className="ws-sidebar" aria-label="Workspace navigation">
         <Link to="/dashboard" className="ws-brand">
           <span className="ws-brand-mark" aria-hidden="true">
@@ -48,6 +66,16 @@ function TaskLayout({ title, subtitle, children }) {
       </aside>
       <div className="ws-main">
         <div className="ws-main-inner">
+          <div className="ws-top-actions">
+            <ProfileMenu
+              theme={theme}
+              onToggleTheme={() =>
+                setTheme((t) => (t === "dark" ? "light" : "dark"))
+              }
+              onLogout={handleLogout}
+            />
+          </div>
+
           {(title || subtitle) && (
             <header className="ws-page-header">
               {title ? <h1 className="ws-page-title">{title}</h1> : null}

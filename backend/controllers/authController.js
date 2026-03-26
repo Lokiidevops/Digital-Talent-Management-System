@@ -22,7 +22,12 @@ const register = async (req, res) => {
     res.status(201).json({
       message: "Registration successful",
       token: generateToken(user._id),
-      user: { id: user._id, name: user.name, email: user.email },
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role || "user",
+      },
     });
   } catch (err) {
     res.status(500).json({ message: "Server error", error: err.message });
@@ -43,7 +48,12 @@ const login = async (req, res) => {
     res.json({
       message: "Login successful",
       token: generateToken(user._id),
-      user: { id: user._id, name: user.name, email: user.email },
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role || "user",
+      },
     });
   } catch (err) {
     res.status(500).json({ message: "Server error", error: err.message });

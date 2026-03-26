@@ -1,4 +1,3 @@
-/* DTMS workspace — complements auth.css; scoped under .ws-root */
 
 @import url("https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap");
 
@@ -336,7 +335,6 @@
   margin-bottom: 1rem;
 }
 
-/* Buttons */
 .ws-btn-row {
   display: flex;
   flex-wrap: wrap;
@@ -404,7 +402,6 @@
   background: rgba(220, 38, 38, 0.14);
 }
 
-/* Task form (reusable) */
 .ws-form {
   background: var(--ws-card);
   border: 1px solid var(--ws-border);
@@ -482,7 +479,6 @@
   line-height: 1.45;
 }
 
-/* Submission panel */
 .ws-submit-panel {
   margin-top: 1rem;
   padding: 1rem;
@@ -491,7 +487,6 @@
   border-radius: var(--ws-radius-sm);
 }
 
-/* Recent list */
 .ws-recent {
   margin-top: 0.5rem;
 }
@@ -523,4 +518,208 @@
   border: 1px dashed var(--ws-border);
   border-radius: var(--ws-radius);
   font-size: 0.95rem;
+}
+
+.ws-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  background: var(--ws-card);
+  border: 1px solid var(--ws-border);
+  border-radius: var(--ws-radius);
+  overflow: hidden;
+}
+
+.ws-table th,
+.ws-table td {
+  padding: 0.85rem 0.75rem;
+  border-bottom: 1px solid var(--ws-border);
+  font-size: 0.92rem;
+  vertical-align: top;
+}
+
+.ws-table th {
+  text-align: left;
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--ws-muted);
+  background: #f8fafc;
+  font-weight: 800;
+}
+
+.ws-table tbody tr:hover {
+  background: rgba(13, 148, 136, 0.04);
+}
+
+.ws-table tr:last-child td {
+  border-bottom: none;
+}
+
+.ws-root[data-theme="dark"] {
+  --ws-surface: #0b1220;
+  --ws-card: #0f172a;
+  --ws-text: #e5e7eb;
+  --ws-muted: #94a3b8;
+  --ws-border: rgba(148, 163, 184, 0.22);
+  --ws-danger-soft: rgba(220, 38, 38, 0.16);
+  --ws-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.28),
+    0 12px 40px rgba(0, 0, 0, 0.38);
+}
+
+.ws-root[data-theme="dark"] .ws-table th {
+  background: rgba(148, 163, 184, 0.06);
+}
+
+.ws-root[data-theme="dark"] .ws-card-meta {
+  background: rgba(148, 163, 184, 0.06);
+  border-color: var(--ws-border);
+}
+
+.ws-root[data-theme="dark"] .ws-submit-panel {
+  background: rgba(13, 148, 136, 0.12);
+  border-color: rgba(13, 148, 136, 0.25);
+}
+
+.ws-root[data-theme="dark"] .ws-btn--ghost {
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--ws-text);
+  border: 1px solid var(--ws-border);
+}
+
+.ws-root[data-theme="dark"] .ws-btn--ghost:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.07);
+  border-color: rgba(148, 163, 184, 0.35);
+}
+
+.ws-root[data-theme="dark"] .ws-input,
+.ws-root[data-theme="dark"] .ws-textarea {
+  background: #0b1220;
+  border-color: rgba(148, 163, 184, 0.25);
+  color: var(--ws-text);
+}
+
+.ws-top-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 1rem;
+}
+
+.ws-profile {
+  position: relative;
+}
+
+.ws-profile-btn {
+  gap: 0.65rem;
+}
+
+.ws-profile-avatar {
+  width: 34px;
+  height: 34px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  background: rgba(13, 148, 136, 0.18);
+  color: var(--ws-accent-hover);
+  font-weight: 800;
+}
+
+.ws-profile-name {
+  max-width: 150px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ws-profile-menu {
+  position: absolute;
+  top: calc(100% + 10px);
+  right: 0;
+  width: 285px;
+  background: var(--ws-card);
+  border: 1px solid var(--ws-border);
+  border-radius: var(--ws-radius);
+  box-shadow: var(--ws-shadow);
+  padding: 0.9rem 0.95rem;
+  z-index: 50;
+}
+
+.ws-profile-menu-head {
+  display: flex;
+  gap: 0.85rem;
+  align-items: center;
+}
+
+.ws-profile-avatar-lg {
+  width: 44px;
+  height: 44px;
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(13, 148, 136, 0.18);
+  color: var(--ws-accent-hover);
+  font-weight: 900;
+}
+
+.ws-profile-user {
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.ws-profile-email {
+  margin-top: 2px;
+  font-size: 0.85rem;
+  color: var(--ws-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 190px;
+}
+
+.ws-profile-divider {
+  height: 1px;
+  background: var(--ws-border);
+  margin: 0.9rem 0;
+}
+
+.ws-profile-action {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  background: transparent;
+  border: 0;
+  padding: 0.65rem 0.35rem;
+  border-radius: 10px;
+  cursor: pointer;
+  color: var(--ws-text);
+  font-family: inherit;
+  font-weight: 700;
+}
+
+.ws-profile-action:hover {
+  background: rgba(148, 163, 184, 0.12);
+}
+
+.ws-profile-action-value {
+  font-weight: 800;
+  color: var(--ws-muted);
+}
+
+.ws-profile-danger {
+  color: var(--ws-danger) !important;
+}
+
+@media (max-width: 900px) {
+  .ws-top-actions {
+    justify-content: center;
+  }
+
+  .ws-profile-name {
+    display: none;
+  }
 }

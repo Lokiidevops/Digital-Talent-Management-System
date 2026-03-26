@@ -1,8 +1,5 @@
 import React from "react";
 
-/**
- * Reusable task form — create & inline edit.
- */
 function TaskForm({
   title,
   description,

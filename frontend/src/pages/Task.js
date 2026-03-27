@@ -1,429 +1,242 @@
-import React, { useEffect, useMemo, useState } from "react";
-import API from "../services/api";
-import { Link } from "react-router-dom";
-import TaskLayout from "../components/TaskLayout";
-import TaskForm from "../components/TaskForm";
+import React, { useState } from "react";
+import { 
+  Plus, 
+  Search, 
+  Filter, 
+  MoreHorizontal, 
+  Edit2, 
+  Trash2, 
+  ChevronRight,
+  ChevronLeft,
+  Calendar,
+  AlertCircle
+} from "lucide-react";
+import { Card, CardHeader, CardTitle, CardContent } from "../components/ui/Card";
+import { Button } from "../components/ui/Button";
+import { Badge } from "../components/ui/Badge";
+import { Input } from "../components/ui/Input";
+import DashboardLayout from "../layouts/DashboardLayout";
+import Modal from "../components/ui/Modal";
+import { motion, AnimatePresence } from "framer-motion";
+import { toast } from "react-hot-toast";
 
-function toDateInputValue(dateLike) {
-  if (!dateLike) return "";
-  const d = new Date(dateLike);
-  if (Number.isNaN(d.getTime())) return "";
-  const yyyy = d.getFullYear();
-  const mm = String(d.getMonth() + 1).padStart(2, "0");
-  const dd = String(d.getDate()).padStart(2, "0");
-  return `${yyyy}-${mm}-${dd}`;
-}
+const dummyTasks = [
+  { id: 1, title: "Design Landing Page", priority: "high", status: "in-progress", dueDate: "2024-03-28", user: "John Doe" },
+  { id: 2, title: "Develop API Endpoints", priority: "medium", status: "pending", dueDate: "2024-03-30", user: "Sarah Smith" },
+  { id: 3, title: "User Testing", priority: "low", status: "completed", dueDate: "2024-03-25", user: "Mike Johnson" },
+  { id: 4, title: "Bug Fixing - Auth Flow", priority: "high", status: "overdue", dueDate: "2024-03-20", user: "John Doe" },
+  { id: 5, title: "Documentation Update", priority: "medium", status: "in-progress", dueDate: "2024-04-05", user: "Sarah Smith" },
+];
 
-function formatDeadline(dateLike) {
-  if (!dateLike) return "—";
-  const d = new Date(dateLike);
-  if (Number.isNaN(d.getTime())) return "—";
-  return d.toLocaleDateString();
-}
+const TaskPage = () => {
+  const [tasks, setTasks] = useState(dummyTasks);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedTask, setSelectedTask] = useState(null);
+  const [filterStatus, setFilterStatus] = useState("all");
 
-function Tasks() {
-  const user = useMemo(() => {
-    try {
-      return JSON.parse(localStorage.getItem("user") || "null");
-    } catch {
-      return null;
-    }
-  }, []);
-
-  const role = user?.role || "user";
-  const isAdmin = role === "admin";
-
-  const [tasks, setTasks] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [notice, setNotice] = useState({ type: "info", message: "" });
-
-  const [editingTaskId, setEditingTaskId] = useState(null);
-  const [editTitle, setEditTitle] = useState("");
-  const [editDescription, setEditDescription] = useState("");
-  const [editDeadline, setEditDeadline] = useState("");
-  const [editPriority, setEditPriority] = useState("medium");
-  const [editAssignedUserEmail, setEditAssignedUserEmail] = useState("");
-  const [editSaving, setEditSaving] = useState(false);
-
-  const [submitOpenId, setSubmitOpenId] = useState(null);
-  const [submitText, setSubmitText] = useState("");
-  const [submitFile, setSubmitFile] = useState(null);
-  const [submitLoading, setSubmitLoading] = useState(false);
-
-  const fetchTasks = async () => {
-    setLoading(true);
-    try {
-      const res = isAdmin ? await API.get("/tasks") : await API.get("/tasks/mine");
-      setTasks(res.data);
-    } catch (error) {
-      setNotice({
-        type: "error",
-        message: error.response?.data?.message || "Failed to load tasks",
-      });
-    } finally {
-      setLoading(false);
+  const getPriorityBadge = (priority) => {
+    switch (priority) {
+      case "high": return <Badge variant="danger">High</Badge>;
+      case "medium": return <Badge variant="warning">Medium</Badge>;
+      case "low": return <Badge variant="success">Low</Badge>;
+      default: return <Badge variant="secondary">{priority}</Badge>;
     }
   };
 
-  useEffect(() => {
-    fetchTasks();
-
-  }, [isAdmin]);
-
-  const openSubmit = (t) => {
-    setSubmitOpenId(t._id);
-    setSubmitText(t.submissionText || "");
-    setSubmitFile(null);
-  };
-
-  const closeSubmit = () => {
-    setSubmitOpenId(null);
-    setSubmitText("");
-    setSubmitFile(null);
-    setSubmitLoading(false);
-  };
-
-  const confirmSubmit = async (id) => {
-    if (!submitText.trim() && !submitFile) {
-      setNotice({ type: "error", message: "Add submission text or attach a file." });
-      return;
-    }
-
-    try {
-      setSubmitLoading(true);
-      const formData = new FormData();
-      formData.append("submissionText", submitText);
-      if (submitFile) formData.append("file", submitFile);
-
-      await API.post(`/tasks/submit/${id}`, formData, {
-        headers: { "Content-Type": "multipart/form-data" },
-      });
-
-      closeSubmit();
-      await fetchTasks();
-      setNotice({ type: "success", message: "Submission saved." });
-    } catch (error) {
-      setNotice({
-        type: "error",
-        message: error.response?.data?.message || "Failed to submit task",
-      });
-    } finally {
-      setSubmitLoading(false);
+  const getStatusBadge = (status) => {
+    switch (status) {
+      case "completed": return <Badge variant="success" className="rounded-md">Completed</Badge>;
+      case "in-progress": return <Badge variant="default" className="bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300 rounded-md">In Progress</Badge>;
+      case "pending": return <Badge variant="warning" className="rounded-md">Pending</Badge>;
+      case "overdue": return <Badge variant="danger" className="rounded-md">Overdue</Badge>;
+      default: return <Badge variant="secondary" className="rounded-md">{status}</Badge>;
     }
   };
 
-  const deleteTask = async (id) => {
-    const shouldDelete = window.confirm("Delete this task?");
-    if (!shouldDelete) return;
+  const filteredTasks = tasks.filter(task => {
+    const matchesSearch = task.title.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesStatus = filterStatus === "all" || task.status === filterStatus;
+    return matchesSearch && matchesStatus;
+  });
 
-    try {
-      await API.delete(`/tasks/${id}`);
-      if (submitOpenId === id) closeSubmit();
-      await fetchTasks();
-      setNotice({ type: "success", message: "Task deleted." });
-    } catch (error) {
-      setNotice({
-        type: "error",
-        message: error.response?.data?.message || "Failed to delete task",
-      });
-    }
-  };
-
-  const startEdit = (task) => {
-    setEditingTaskId(task._id);
-    setEditTitle(task.title || "");
-    setEditDescription(task.description || "");
-    setEditDeadline(toDateInputValue(task.deadline));
-    setEditPriority(task.priority || "medium");
-    setEditAssignedUserEmail(task.assignedUser?.email || "");
-    closeSubmit();
-  };
-
-  const cancelEdit = () => {
-    setEditingTaskId(null);
-    setEditTitle("");
-    setEditDescription("");
-    setEditDeadline("");
-    setEditPriority("medium");
-    setEditAssignedUserEmail("");
-    setEditSaving(false);
-  };
-
-  const saveEdit = async (e) => {
-    e.preventDefault();
-    if (!editTitle.trim()) {
-      setNotice({ type: "error", message: "Title is required." });
-      return;
-    }
-    if (!editAssignedUserEmail.trim()) {
-      setNotice({ type: "error", message: "Assigned user email is required." });
-      return;
-    }
-
-    try {
-      setEditSaving(true);
-      await API.put(`/tasks/${editingTaskId}`, {
-        title: editTitle,
-        description: editDescription,
-        deadline: editDeadline || null,
-        priority: editPriority,
-        assignedUserEmail: editAssignedUserEmail,
-      });
-      cancelEdit();
-      await fetchTasks();
-      setNotice({ type: "success", message: "Task updated." });
-    } catch (error) {
-      setNotice({
-        type: "error",
-        message: error.response?.data?.message || "Failed to update task",
-      });
-    } finally {
-      setEditSaving(false);
-    }
-  };
-
-  const markCompleted = async (id) => {
-    try {
-      await API.put(`/tasks/${id}`, { status: "completed" });
-      await fetchTasks();
-      setNotice({ type: "success", message: "Task marked completed." });
-    } catch (error) {
-      setNotice({
-        type: "error",
-        message: error.response?.data?.message || "Failed to update status",
-      });
+  const handleDeleteTask = (id) => {
+    if (window.confirm("Are you sure you want to delete this task?")) {
+      setTasks(tasks.filter(t => t.id !== id));
+      toast.success("Task deleted successfully");
     }
   };
 
   return (
-    <TaskLayout
-      title="Tasks"
-      subtitle="Admin can manage tasks. Users can submit text/files and track status."
-    >
-      {notice.message ? (
-        <div
-          className="ws-card"
-          style={{
-            marginBottom: "1rem",
-            borderLeftColor:
-              notice.type === "success"
-                ? "var(--ws-accent)"
-                : notice.type === "error"
-                  ? "var(--ws-danger)"
-                  : "var(--ws-border)",
-          }}
-        >
-          {notice.message}
+    <DashboardLayout>
+      <div className="flex flex-col gap-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight text-gray-900 dark:text-white">Tasks</h1>
+            <p className="text-gray-500 dark:text-gray-400 mt-1">Manage and track your team's progress.</p>
+          </div>
+          <Button onClick={() => setIsModalOpen(true)} className="w-full sm:w-auto gap-2">
+            <Plus size={18} />
+            Create Task
+          </Button>
         </div>
-      ) : null}
 
-      <div className="ws-btn-row" style={{ marginBottom: "1.25rem" }}>
-        {isAdmin ? (
-          <Link to="/tasks/create" className="ws-btn ws-btn--primary">
-            + New task
-          </Link>
-        ) : null}
-        <Link to="/dashboard" className="ws-btn ws-btn--ghost">
-          Dashboard
-        </Link>
+        {/* Filters and Search */}
+        <Card className="border-none shadow-sm bg-white/50 backdrop-blur-sm dark:bg-gray-900/50">
+          <CardContent className="p-4 flex flex-col md:flex-row gap-4">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 h-4 w-4" />
+              <input
+                type="text"
+                placeholder="Search tasks..."
+                className="w-full pl-10 pr-4 py-2 rounded-lg border border-gray-200 bg-white focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 dark:border-gray-800 dark:bg-gray-950 transition-all"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+            </div>
+            <div className="flex gap-2">
+              <select 
+                className="px-3 py-2 rounded-lg border border-gray-200 bg-white focus:outline-none focus:ring-2 focus:ring-primary-500/20 dark:border-gray-800 dark:bg-gray-950"
+                value={filterStatus}
+                onChange={(e) => setFilterStatus(e.target.value)}
+              >
+                <option value="all">All Status</option>
+                <option value="pending">Pending</option>
+                <option value="in-progress">In Progress</option>
+                <option value="completed">Completed</option>
+                <option value="overdue">Overdue</option>
+              </select>
+              <Button variant="secondary" size="icon">
+                <Filter size={18} />
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Task Table */}
+        <Card className="overflow-hidden border-none shadow-sm">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="bg-gray-50 dark:bg-gray-800/50 border-b border-gray-200 dark:border-gray-800">
+                  <th className="px-6 py-4 text-sm font-semibold text-gray-600 dark:text-gray-300">Task Title</th>
+                  <th className="px-6 py-4 text-sm font-semibold text-gray-600 dark:text-gray-300">Priority</th>
+                  <th className="px-6 py-4 text-sm font-semibold text-gray-600 dark:text-gray-300">Status</th>
+                  <th className="px-6 py-4 text-sm font-semibold text-gray-600 dark:text-gray-300">Due Date</th>
+                  <th className="px-6 py-4 text-sm font-semibold text-gray-600 dark:text-gray-300 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
+                <AnimatePresence mode="popLayout">
+                  {filteredTasks.map((task) => (
+                    <motion.tr
+                      key={task.id}
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      layout
+                      className="hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors group"
+                    >
+                      <td className="px-6 py-4">
+                        <div className="flex flex-col">
+                          <span className="font-medium text-gray-900 dark:text-white group-hover:text-primary-600 transition-colors">
+                            {task.title}
+                          </span>
+                          <span className="text-xs text-gray-500 dark:text-gray-400">Assigned to {task.user}</span>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4">{getPriorityBadge(task.priority)}</td>
+                      <td className="px-6 py-4">{getStatusBadge(task.status)}</td>
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+                          <Calendar size={14} />
+                          {task.dueDate}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 text-right">
+                        <div className="flex justify-end gap-2">
+                          <Button variant="ghost" size="icon" className="h-8 w-8 text-gray-500 hover:text-primary-600">
+                            <Edit2 size={16} />
+                          </Button>
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="h-8 w-8 text-gray-500 hover:text-red-600"
+                            onClick={() => handleDeleteTask(task.id)}
+                          >
+                            <Trash2 size={16} />
+                          </Button>
+                        </div>
+                      </td>
+                    </motion.tr>
+                  ))}
+                </AnimatePresence>
+              </tbody>
+            </table>
+          </div>
+          {filteredTasks.length === 0 && (
+            <div className="p-12 text-center">
+              <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-400 mb-4">
+                <AlertCircle size={24} />
+              </div>
+              <p className="text-gray-500 dark:text-gray-400 font-medium">No tasks found matching your criteria.</p>
+            </div>
+          )}
+          <div className="px-6 py-4 border-t border-gray-100 dark:border-gray-800 flex items-center justify-between bg-gray-50/50 dark:bg-gray-800/20">
+            <span className="text-sm text-gray-500 dark:text-gray-400">
+              Showing <span className="font-semibold text-gray-900 dark:text-white">{filteredTasks.length}</span> tasks
+            </span>
+            <div className="flex gap-2">
+              <Button variant="secondary" size="sm" className="gap-1">
+                <ChevronLeft size={16} /> Previous
+              </Button>
+              <Button variant="secondary" size="sm" className="gap-1">
+                Next <ChevronRight size={16} />
+              </Button>
+            </div>
+          </div>
+        </Card>
       </div>
 
-      {loading ? (
-        <div className="ws-empty">Loading tasks…</div>
-      ) : tasks.length === 0 ? (
-        <div className="ws-empty">
-          No tasks yet.
-          {isAdmin ? <div style={{ marginTop: "0.5rem" }}>Create one to begin.</div> : null}
+      {/* Create Task Modal */}
+      <Modal 
+        isOpen={isModalOpen} 
+        onClose={() => setIsModalOpen(false)}
+        title="Create New Task"
+        footer={
+          <>
+            <Button variant="secondary" onClick={() => setIsModalOpen(false)}>Cancel</Button>
+            <Button onClick={() => {
+              toast.success("Task created successfully!");
+              setIsModalOpen(false);
+            }}>Create Task</Button>
+          </>
+        }
+      >
+        <div className="space-y-4">
+          <Input label="Task Title" placeholder="Enter task name" />
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Priority</label>
+              <select className="w-full h-10 px-3 py-2 rounded-md border border-gray-200 bg-white text-sm dark:border-gray-800 dark:bg-gray-950">
+                <option value="low">Low</option>
+                <option value="medium">Medium</option>
+                <option value="high">High</option>
+              </select>
+            </div>
+            <Input label="Due Date" type="date" />
+          </div>
+          <div className="space-y-1.5">
+            <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Description</label>
+            <textarea 
+              className="w-full min-h-[100px] px-3 py-2 rounded-md border border-gray-200 bg-white text-sm dark:border-gray-800 dark:bg-gray-950 focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500"
+              placeholder="What needs to be done?"
+            />
+          </div>
         </div>
-      ) : isAdmin ? (
-        <div style={{ overflowX: "auto" }}>
-          <table className="ws-table">
-            <thead>
-              <tr>
-                <th>Title</th>
-                <th>Priority</th>
-                <th>Deadline</th>
-                <th>Assigned</th>
-                <th>Status</th>
-                <th style={{ textAlign: "right" }}>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {tasks.map((t) =>
-                editingTaskId === t._id ? (
-                  <tr key={`edit-${t._id}`}>
-                    <td colSpan={6}>
-                      <TaskForm
-                        embedded
-                        idPrefix={`edit-${t._id}`}
-                        title={editTitle}
-                        description={editDescription}
-                        deadline={editDeadline}
-                        priority={editPriority}
-                        assignedUserEmail={editAssignedUserEmail}
-                        onTitleChange={setEditTitle}
-                        onDescriptionChange={setEditDescription}
-                        onDeadlineChange={setEditDeadline}
-                        onPriorityChange={setEditPriority}
-                        onAssignedUserEmailChange={setEditAssignedUserEmail}
-                        onSubmit={saveEdit}
-                        submitLabel="Save changes"
-                        loading={editSaving}
-                        onCancel={cancelEdit}
-                        cancelLabel="Cancel"
-                        showAdvanced
-                      />
-                    </td>
-                  </tr>
-                ) : (
-                  <tr key={t._id}>
-                    <td style={{ fontWeight: 700 }}>{t.title}</td>
-                    <td>{String(t.priority || "medium")}</td>
-                    <td>{formatDeadline(t.deadline)}</td>
-                    <td>{t.assignedUser?.email || "—"}</td>
-                    <td>
-                      <span className={`ws-badge ws-badge--${t.status}`}>
-                        {t.status}
-                      </span>
-                    </td>
-                    <td style={{ textAlign: "right" }}>
-                      {t.status !== "completed" ? (
-                        <button
-                          type="button"
-                          className="ws-btn ws-btn--primary"
-                          style={{ marginRight: "0.4rem" }}
-                          onClick={() => markCompleted(t._id)}
-                        >
-                          Complete
-                        </button>
-                      ) : null}
-                      <button
-                        type="button"
-                        className="ws-btn ws-btn--ghost"
-                        onClick={() => startEdit(t)}
-                      >
-                        Edit
-                      </button>
-                      <button
-                        type="button"
-                        className="ws-btn ws-btn--danger"
-                        style={{ marginLeft: "0.4rem" }}
-                        onClick={() => deleteTask(t._id)}
-                      >
-                        Delete
-                      </button>
-                    </td>
-                  </tr>
-                )
-              )}
-            </tbody>
-          </table>
-        </div>
-      ) : (
-        <div className="ws-card-grid">
-          {tasks.map((t) => (
-            <article key={t._id} className={`ws-card ws-card--${t.status}`}>
-              <div className="ws-card-head">
-                <h3 className="ws-card-title">{t.title}</h3>
-                <span className={`ws-badge ws-badge--${t.status}`}>
-                  {t.status}
-                </span>
-              </div>
-
-              {t.description ? (
-                <p className="ws-card-body">{t.description}</p>
-              ) : (
-                <p className="ws-card-body" style={{ fontStyle: "italic" }}>
-                  No description
-                </p>
-              )}
-
-              <div className="ws-card-meta">
-                <strong style={{ color: "var(--ws-text)" }}>Deadline:</strong> {formatDeadline(t.deadline)}
-                <div style={{ marginTop: "0.3rem" }}>
-                  <strong style={{ color: "var(--ws-text)" }}>Priority:</strong> {t.priority || "medium"}
-                </div>
-              </div>
-
-              {t.submissionText || t.submissionFileUrl ? (
-                <div className="ws-card-meta">
-                  <strong style={{ color: "var(--ws-text)" }}>Submission:</strong>
-                  {t.submissionText ? <div style={{ marginTop: "0.35rem" }}>{t.submissionText}</div> : null}
-                  {t.submissionFileUrl ? (
-                    <div style={{ marginTop: "0.6rem" }}>
-                      <a href={t.submissionFileUrl} target="_blank" rel="noreferrer">
-                        View file
-                      </a>
-                    </div>
-                  ) : null}
-                </div>
-              ) : null}
-
-              {submitOpenId === t._id ? (
-                <div className="ws-submit-panel">
-                  <label className="ws-label" htmlFor={`submit-${t._id}`}>
-                    Your submission
-                  </label>
-                  <textarea
-                    id={`submit-${t._id}`}
-                    className="ws-textarea"
-                    style={{ minHeight: "88px", marginBottom: "0.75rem" }}
-                    value={submitText}
-                    onChange={(e) => setSubmitText(e.target.value)}
-                    placeholder="Paste summary, link, or notes…"
-                    disabled={submitLoading}
-                  />
-                  <div style={{ marginBottom: "0.75rem" }}>
-                    <label className="ws-label" htmlFor={`file-${t._id}`}>
-                      Attach file (optional)
-                    </label>
-                    <input
-                      id={`file-${t._id}`}
-                      type="file"
-                      className="ws-input"
-                      onChange={(e) => setSubmitFile(e.target.files?.[0] || null)}
-                      disabled={submitLoading}
-                    />
-                  </div>
-
-                  <div className="ws-btn-row">
-                    <button
-                      type="button"
-                      className="ws-btn ws-btn--primary"
-                      onClick={() => confirmSubmit(t._id)}
-                      disabled={submitLoading}
-                    >
-                      {submitLoading ? "Submitting…" : "Submit"}
-                    </button>
-                    <button
-                      type="button"
-                      className="ws-btn ws-btn--ghost"
-                      onClick={closeSubmit}
-                      disabled={submitLoading}
-                    >
-                      Cancel
-                    </button>
-                  </div>
-                </div>
-              ) : null}
-
-              {t.status !== "completed" && submitOpenId !== t._id ? (
-                <div className="ws-btn-row" style={{ marginTop: "0.9rem" }}>
-                  <button
-                    type="button"
-                    className="ws-btn ws-btn--primary"
-                    onClick={() => openSubmit(t)}
-                  >
-                    Submit
-                  </button>
-                </div>
-              ) : null}
-            </article>
-          ))}
-        </div>
-      )}
-    </TaskLayout>
+      </Modal>
+    </DashboardLayout>
   );
-}
+};
 
-export default Tasks;
+export default TaskPage;

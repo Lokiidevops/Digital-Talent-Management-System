@@ -1,347 +1,135 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { registerUser } from "../services/api";
-import "../styles/auth.css";
 import { GoogleLogin } from "@react-oauth/google";
+import { Button } from "../components/ui/Button";
+import { Input } from "../components/ui/Input";
+import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "../components/ui/Card";
+import { Briefcase } from "lucide-react";
+import { toast } from "react-hot-toast";
 
 const Register = () => {
-  const [form, setForm] = useState({
-    firstName: "",
-    lastName: "",
-    email: "",
-    password: "",
-    confirmPassword: "",
-  });
-  const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
+  const [form, setForm] = useState({ name: "", email: "", password: "" });
   const [loading, setLoading] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const navigate = useNavigate();
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
-    setError("");
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError("");
-    setSuccess("");
-
-    if (form.password !== form.confirmPassword)
-      return setError("Passwords do not match");
-
-    if (form.password.length < 6)
-      return setError("Password must be at least 6 characters");
-
     setLoading(true);
     try {
-      const payload = {
-        firstName: form.firstName,
-        lastName: form.lastName,
-        email: form.email,
-        password: form.password,
-      };
-      const res = await registerUser(payload);
-      localStorage.setItem("token", res.data.token);
-      localStorage.setItem("user", JSON.stringify(res.data.user));
-      setSuccess("Account created! Redirecting...");
-      setTimeout(() => navigate("/login"), 1500);
+      await registerUser(form);
+      toast.success("Account created successfully! Please login.");
+      navigate("/login");
     } catch (err) {
-      setError(err.response?.data?.message || "Registration failed.");
+      toast.error(err.response?.data?.message || "Registration failed. Try again.");
     } finally {
       setLoading(false);
     }
   };
 
+  const handleGoogleSuccess = (res) => {
+    localStorage.setItem("googleUser", JSON.stringify(res));
+    toast.success("Google registration successful!");
+    navigate("/dashboard");
+  };
+
   return (
-    <div className="auth-wrapper">
-      <div className="auth-card">
-        <div
-          className="brand"
-          style={{ justifyContent: "center", marginBottom: "3px" }}
-        >
-          <span
-            className="brand-name"
-            style={{
-              fontSize: "1.7rem",
-              letterSpacing: "0.08em",
-              color: "#1a1a2e",
-              fontFamily: "'Plus Jakarta Sans', sans-serif",
-            }}
-          ></span>
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-950 p-4 transition-colors duration-300">
+      <div className="w-full max-w-md space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+        <div className="text-center">
+          <div className="mx-auto h-12 w-12 bg-primary-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-primary-500/20">
+            <Briefcase size={28} />
+          </div>
+          <h1 className="mt-6 text-3xl font-bold tracking-tight text-gray-900 dark:text-white">
+            Join DTMS
+          </h1>
+          <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
+            Digital Talent Management System
+          </p>
         </div>
 
-        <h2
-          style={{
-            fontSize: "1.4rem",
-            marginBottom: "4px",
-            marginTop: "-4px",
-            fontFamily: "'Plus Jakarta Sans', sans-serif",
-          }}
-        >
-          Create your account
-        </h2>
-        <p className="sub" style={{ marginBottom: "20px" }}>
-          Join us today. It only takes a minute.
-        </p>
-
-        {error && <div className="msg error">{error}</div>}
-        {success && <div className="msg success">{success}</div>}
-
-        <form onSubmit={handleSubmit}>
-          <div className="form-group">
-            <label>First Name</label>
-            <input
-              type="text"
-              name="firstName"
-              placeholder="First Name"
-              value={form.firstName}
-              onChange={handleChange}
-              required
-            />
-          </div>
-
-          <div className="form-group">
-            <label>Last Name</label>
-            <input
-              type="text"
-              name="lastName"
-              placeholder="Last Name"
-              value={form.lastName}
-              onChange={handleChange}
-              required
-            />
-          </div>
-
-          <div className="form-group">
-            <label>Email Address</label>
-            <input
-              type="email"
-              name="email"
-              placeholder="rynixsoft@gmail.com"
-              value={form.email}
-              onChange={handleChange}
-              required
-            />
-          </div>
-
-          <div className="form-group">
-            <label>Password</label>
-            <div style={{ position: "relative" }}>
-              <input
-                type={showPassword ? "text" : "password"}
+        <Card className="border-none shadow-xl bg-white/80 backdrop-blur-sm dark:bg-gray-900/80">
+          <CardHeader className="space-y-1 text-center">
+            <CardTitle className="text-2xl font-bold">Create an account</CardTitle>
+            <CardDescription>
+              Enter your information below to get started
+            </CardDescription>
+          </CardHeader>
+          <form onSubmit={handleSubmit}>
+            <CardContent className="space-y-4">
+              <Input
+                label="Full Name"
+                type="text"
+                name="name"
+                placeholder="John Doe"
+                value={form.name}
+                onChange={handleChange}
+                required
+              />
+              <Input
+                label="Email Address"
+                type="email"
+                name="email"
+                placeholder="name@example.com"
+                value={form.email}
+                onChange={handleChange}
+                required
+              />
+              <Input
+                label="Password"
+                type="password"
                 name="password"
-                placeholder="Minimum 6 characters"
+                placeholder="••••••••"
                 value={form.password}
                 onChange={handleChange}
                 required
-                minLength={6}
-                style={{ paddingRight: "44px" }}
-                autoComplete="new-password"
               />
-              <span
-                onClick={() => setShowPassword(!showPassword)}
-                style={{
-                  position: "absolute",
-                  right: "14px",
-                  top: "50%",
-                  transform: "translateY(-50%)",
-                  cursor: "pointer",
-                  color: "#9ca3af",
-                  fontSize: "1rem",
-                  userSelect: "none",
-                }}
-              >
-                {showPassword ? (
-                  <svg
-                    width="18"
-                    height="18"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94" />
-                    <path d="M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19" />
-                    <line x1="1" y1="1" x2="23" y2="23" />
-                  </svg>
-                ) : (
-                  <svg
-                    width="18"
-                    height="18"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
-                    <circle cx="12" cy="12" r="3" />
-                  </svg>
-                )}
-              </span>
-            </div>
-          </div>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                By clicking sign up, you agree to our{" "}
+                <Link to="#" className="text-primary-600 hover:underline">Terms of Service</Link> and{" "}
+                <Link to="#" className="text-primary-600 hover:underline">Privacy Policy</Link>.
+              </p>
+            </CardContent>
+            <CardFooter className="flex flex-col gap-4">
+              <Button type="submit" className="w-full" isLoading={loading}>
+                Create Account
+              </Button>
+              <div className="relative w-full">
+                <div className="absolute inset-0 flex items-center">
+                  <span className="w-full border-t border-gray-200 dark:border-gray-800" />
+                </div>
+                <div className="relative flex justify-center text-xs uppercase">
+                  <span className="bg-white px-2 text-gray-500 dark:bg-gray-900 dark:text-gray-400">
+                    Or continue with
+                  </span>
+                </div>
+              </div>
+              <div className="flex justify-center w-full">
+                <GoogleLogin
+                  onSuccess={handleGoogleSuccess}
+                  onError={() => toast.error("Google registration failed")}
+                  useOneTap
+                  theme="outline"
+                  shape="pill"
+                />
+              </div>
+            </CardFooter>
+          </form>
+        </Card>
 
-          <div className="form-group">
-            <label>Confirm Password</label>
-            <div style={{ position: "relative" }}>
-              <input
-                type={showConfirmPassword ? "text" : "password"}
-                name="confirmPassword"
-                placeholder="Re-enter your password"
-                value={form.confirmPassword}
-                onChange={handleChange}
-                required
-                style={{ paddingRight: "44px" }}
-              />
-              <span
-                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                style={{
-                  position: "absolute",
-                  right: "14px",
-                  top: "50%",
-                  transform: "translateY(-50%)",
-                  cursor: "pointer",
-                  color: "#9ca3af",
-                  display: "flex",
-                  alignItems: "center",
-                }}
-              >
-                {showConfirmPassword ? (
-                  <svg
-                    width="18"
-                    height="18"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94" />
-                    <path d="M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19" />
-                    <line x1="1" y1="1" x2="23" y2="23" />
-                  </svg>
-                ) : (
-                  <svg
-                    width="18"
-                    height="18"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
-                    <circle cx="12" cy="12" r="3" />
-                  </svg>
-                )}
-              </span>
-            </div>
-          </div>
-
-          <div
-            style={{
-              display: "flex",
-              alignItems: "flex-start",
-              gap: "10px",
-              margin: "16px 0",
-            }}
+        <p className="text-center text-sm text-gray-500 dark:text-gray-400">
+          Already have an account?{" "}
+          <Link
+            to="/login"
+            className="font-semibold text-primary-600 hover:text-primary-500 transition-colors"
           >
-            <input
-              type="checkbox"
-              id="terms"
-              checked={form.terms}
-              onChange={(e) => setForm({ ...form, terms: e.target.checked })}
-              style={{
-                width: "16px",
-                height: "16px",
-                marginTop: "2px",
-                accentColor: "#1a1a2e",
-                cursor: "pointer",
-                flexShrink: 0,
-              }}
-            />
-            <label
-              htmlFor="terms"
-              style={{
-                fontSize: ".82rem",
-                color: "#555",
-                lineHeight: "1.5",
-                cursor: "pointer",
-              }}
-            >
-              I agree to the{" "}
-              <a
-                href="/terms"
-                style={{
-                  color: "#1a1a2e",
-                  fontWeight: "600",
-                  textDecoration: "none",
-                  borderBottom: "1px solid #1a1a2e",
-                }}
-              >
-                Terms and Conditions
-              </a>{" "}
-              and{" "}
-              <a
-                href="/privacy"
-                style={{
-                  color: "#1a1a2e",
-                  fontWeight: "600",
-                  textDecoration: "none",
-                  borderBottom: "1px solid #1a1a2e",
-                }}
-              >
-                Privacy Policy
-              </a>
-            </label>
-          </div>
-
-          <button type="submit" className="btn" disabled={loading}>
-            {loading ? "Creating account..." : "Create Account"}
-          </button>
-        </form>
-
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: "10px",
-            margin: "20px 0",
-          }}
-        >
-          <div style={{ flex: 1, height: "1px", background: "#e0e0d8" }}></div>
-          <span style={{ color: "#8C8A82", fontSize: ".8rem" }}>
-            or continue with
-          </span>
-          <div style={{ flex: 1, height: "1px", background: "#e0e0d8" }}></div>
-        </div>
-
-        <div style={{ display: "flex", justifyContent: "center" }}>
-          <GoogleLogin
-            onSuccess={(res) => {
-              console.log("Google Success:", res);
-              alert("Google login successful!");
-            }}
-            onError={() => setError("Google login failed")}
-            width="360"
-            text="continue_with"
-            shape="rectangular"
-            theme="outline"
-          />
-        </div>
-
-        <div className="switch-link">
-          Already have an account? <Link to="/login">Sign in</Link>
-        </div>
+            Sign in here
+          </Link>
+        </p>
       </div>
     </div>
   );

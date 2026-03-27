@@ -1,7 +1,11 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { forgotPassword, verifyOTP, resetPassword } from "../services/api";
-import "../styles/auth.css";
+import { Button } from "../components/ui/Button";
+import { Input } from "../components/ui/Input";
+import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "../components/ui/Card";
+import { Briefcase, ArrowLeft } from "lucide-react";
+import { toast } from "react-hot-toast";
 
 const ForgotPassword = () => {
   const [step, setStep] = useState(1);
@@ -9,22 +13,18 @@ const ForgotPassword = () => {
   const [otp, setOtp] = useState("");
   const [newPassword, setNew] = useState("");
   const [confirmPass, setConfirm] = useState("");
-  const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
   const handleSendOTP = async (e) => {
     e.preventDefault();
     setLoading(true);
-    setError("");
-    setSuccess("");
     try {
       await forgotPassword({ email });
-      setSuccess("OTP sent to your email!");
+      toast.success("OTP sent to your email!");
       setStep(2);
     } catch (err) {
-      setError(err.response?.data?.message || "Failed to send OTP");
+      toast.error(err.response?.data?.message || "Failed to send OTP");
     } finally {
       setLoading(false);
     }
@@ -33,14 +33,12 @@ const ForgotPassword = () => {
   const handleVerifyOTP = async (e) => {
     e.preventDefault();
     setLoading(true);
-    setError("");
-    setSuccess("");
     try {
       await verifyOTP({ email, otp });
-      setSuccess("OTP verified!");
+      toast.success("OTP verified!");
       setStep(3);
     } catch (err) {
-      setError(err.response?.data?.message || "Invalid OTP");
+      toast.error(err.response?.data?.message || "Invalid OTP");
     } finally {
       setLoading(false);
     }
@@ -48,190 +46,126 @@ const ForgotPassword = () => {
 
   const handleReset = async (e) => {
     e.preventDefault();
-    if (newPassword !== confirmPass) return setError("Passwords do not match");
+    if (newPassword !== confirmPass) {
+      toast.error("Passwords do not match");
+      return;
+    }
     setLoading(true);
-    setError("");
-    setSuccess("");
     try {
       await resetPassword({ email, otp, newPassword });
-      setSuccess("Password reset! Redirecting to login...");
+      toast.success("Password reset successfully!");
       setTimeout(() => navigate("/login"), 2000);
     } catch (err) {
-      setError(err.response?.data?.message || "Reset failed");
+      toast.error(err.response?.data?.message || "Reset failed");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="auth-wrapper">
-      <div className="auth-card">
-        <div
-          className="brand"
-          style={{ justifyContent: "center", marginBottom: "5px" }}
-        >
-          <span
-            className="brand-name"
-            style={{
-              fontSize: "1.6rem",
-              letterSpacing: "0.08em",
-              color: "#1a1a2e",
-            }}
-          ></span>
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-950 p-4 transition-colors duration-300">
+      <div className="w-full max-w-md space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+        <div className="text-center">
+          <div className="mx-auto h-12 w-12 bg-primary-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-primary-500/20">
+            <Briefcase size={28} />
+          </div>
+          <h1 className="mt-6 text-3xl font-bold tracking-tight text-gray-900 dark:text-white">
+            Reset Password
+          </h1>
         </div>
 
-        {step === 1 && (
-          <>
-            <h2>Forgot Password</h2>
-            <p className="sub">Enter your email to receive an OTP</p>
-            {error && <div className="msg error">{error}</div>}
-            {success && <div className="msg success">{success}</div>}
+        <Card className="border-none shadow-xl bg-white/80 backdrop-blur-sm dark:bg-gray-900/80">
+          <CardHeader className="space-y-1 text-center">
+            <CardTitle className="text-2xl font-bold">
+              {step === 1 ? "Forgot Password?" : step === 2 ? "Verify OTP" : "New Password"}
+            </CardTitle>
+            <CardDescription>
+              {step === 1 
+                ? "Enter your email to receive an OTP" 
+                : step === 2 
+                ? "Enter the 6-digit code sent to your email" 
+                : "Create a new secure password"}
+            </CardDescription>
+          </CardHeader>
+
+          {step === 1 && (
             <form onSubmit={handleSendOTP}>
-              <div className="form-group">
-                <label>Email Address</label>
-                <input
+              <CardContent className="space-y-4">
+                <Input
+                  label="Email Address"
                   type="email"
-                  placeholder="you@example.com"
+                  placeholder="name@example.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
                 />
-              </div>
-              <button className="btn" disabled={loading}>
-                {loading ? "Sending OTP..." : "Send OTP"}
-              </button>
+              </CardContent>
+              <CardFooter className="flex flex-col gap-4">
+                <Button type="submit" className="w-full" isLoading={loading}>
+                  Send OTP
+                </Button>
+                <Link
+                  to="/login"
+                  className="flex items-center justify-center gap-2 text-sm text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white transition-colors"
+                >
+                  <ArrowLeft size={16} />
+                  Back to login
+                </Link>
+              </CardFooter>
             </form>
-          </>
-        )}
+          )}
 
-        {step === 2 && (
-          <>
-            <h2>Enter OTP</h2>
-            <p className="sub">
-              We sent a 6-digit code to <strong>{email}</strong>
-            </p>
-            {error && <div className="msg error">{error}</div>}
-            {success && <div className="msg success">{success}</div>}
+          {step === 2 && (
             <form onSubmit={handleVerifyOTP}>
-              <div
-                style={{
-                  display: "flex",
-                  gap: "10px",
-                  justifyContent: "center",
-                  margin: "24px 0",
-                }}
-              >
-                {[0, 1, 2, 3, 4, 5].map((i) => (
-                  <input
-                    key={i}
-                    id={`otp-${i}`}
-                    type="text"
-                    inputMode="numeric"
-                    maxLength={1}
-                    value={otp[i] || ""}
-                    onChange={(e) => {
-                      const val = e.target.value.replace(/[^0-9]/g, "");
-                      const otpArr = otp.split("");
-                      otpArr[i] = val;
-                      setOtp(otpArr.join(""));
-                      if (val && i < 5) {
-                        document.getElementById(`otp-${i + 1}`).focus();
-                      }
-                    }}
-                    onKeyDown={(e) => {
-                      if (e.key === "Backspace" && !otp[i] && i > 0) {
-                        document.getElementById(`otp-${i - 1}`).focus();
-                      }
-                    }}
-                    style={{
-                      width: "48px",
-                      height: "56px",
-                      textAlign: "center",
-                      fontSize: "1.4rem",
-                      fontWeight: "700",
-                      border: "2px solid",
-                      borderColor: otp[i] ? "#0d1117" : "#cbd5e1",
-                      borderRadius: "10px",
-                      outline: "none",
-                      background: "#ffffff",
-                      color: "#0d1117",
-                      transition: "all .2s",
-                    }}
-                  />
-                ))}
-              </div>
-
-              <button className="btn" disabled={loading || otp.length < 6}>
-                {loading ? "Verifying..." : "Verify OTP"}
-              </button>
+              <CardContent className="space-y-4">
+                <Input
+                  label="OTP Code"
+                  type="text"
+                  placeholder="Enter 6-digit code"
+                  value={otp}
+                  onChange={(e) => setOtp(e.target.value)}
+                  required
+                />
+              </CardContent>
+              <CardFooter className="flex flex-col gap-4">
+                <Button type="submit" className="w-full" isLoading={loading}>
+                  Verify OTP
+                </Button>
+                <Button variant="ghost" type="button" onClick={() => setStep(1)} className="text-sm">
+                  Try another email
+                </Button>
+              </CardFooter>
             </form>
+          )}
 
-            <div
-              style={{
-                textAlign: "center",
-                marginTop: "16px",
-                fontSize: ".82rem",
-                color: "#8C8A82",
-              }}
-            >
-              Didn't receive the code?{" "}
-              <span
-                style={{
-                  color: "#1a1a2e",
-                  fontWeight: "600",
-                  cursor: "pointer",
-                }}
-                onClick={() => {
-                  setStep(1);
-                  setError("");
-                  setSuccess("");
-                  setOtp("");
-                }}
-              >
-                Resend OTP
-              </span>
-            </div>
-          </>
-        )}
-
-        {step === 3 && (
-          <>
-            <h2>Reset Password</h2>
-            <p className="sub">Enter your new password</p>
-            {error && <div className="msg error">{error}</div>}
-            {success && <div className="msg success">{success}</div>}
+          {step === 3 && (
             <form onSubmit={handleReset}>
-              <div className="form-group">
-                <label>New Password</label>
-                <input
+              <CardContent className="space-y-4">
+                <Input
+                  label="New Password"
                   type="password"
-                  placeholder="Minimum 6 characters"
+                  placeholder="••••••••"
                   value={newPassword}
                   onChange={(e) => setNew(e.target.value)}
                   required
-                  minLength={6}
                 />
-              </div>
-              <div className="form-group">
-                <label>Confirm Password</label>
-                <input
+                <Input
+                  label="Confirm Password"
                   type="password"
-                  placeholder="Re-enter new password"
+                  placeholder="••••••••"
                   value={confirmPass}
                   onChange={(e) => setConfirm(e.target.value)}
                   required
                 />
-              </div>
-              <button className="btn" disabled={loading}>
-                {loading ? "Resetting..." : "Reset Password"}
-              </button>
+              </CardContent>
+              <CardFooter>
+                <Button type="submit" className="w-full" isLoading={loading}>
+                  Reset Password
+                </Button>
+              </CardFooter>
             </form>
-          </>
-        )}
-
-        <div className="switch-link" style={{ marginTop: "20px" }}>
-          <Link to="/login">← Back to Sign In</Link>
-        </div>
+          )}
+        </Card>
       </div>
     </div>
   );

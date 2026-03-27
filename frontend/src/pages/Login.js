@@ -1,209 +1,146 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { loginUser } from "../services/api";
-import "../styles/auth.css";
 import { GoogleLogin } from "@react-oauth/google";
+import { Button } from "../components/ui/Button";
+import { Input } from "../components/ui/Input";
+import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "../components/ui/Card";
+import { Briefcase, Eye, EyeOff } from "lucide-react";
+import { toast } from "react-hot-toast";
 
 const Login = () => {
   const [form, setForm] = useState({ email: "", password: "" });
-  const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const navigate = useNavigate();
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
-    setError("");
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-    setError("");
-    setSuccess("");
     try {
       const res = await loginUser(form);
       localStorage.setItem("token", res.data.token);
       localStorage.setItem("user", JSON.stringify(res.data.user));
-      setSuccess("Login successful! Redirecting...");
+      toast.success("Login successful!");
       navigate("/dashboard");
     } catch (err) {
-      setError(err.response?.data?.message || "Invalid email or password.");
+      toast.error(err.response?.data?.message || "Invalid email or password.");
     } finally {
       setLoading(false);
     }
   };
 
   const handleGoogleSuccess = (res) => {
-    console.log("Google Success:", res);
     localStorage.setItem("googleUser", JSON.stringify(res));
+    toast.success("Google Login successful!");
     navigate("/dashboard");
   };
 
-  const handleGoogleError = () => {
-    setError("Google login failed. Please try again.");
-  };
-
   return (
-    <div className="auth-wrapper">
-      <div className="auth-card">
-        <div
-          className="brand"
-          style={{ justifyContent: "center", marginBottom: "28px" }}
-        >
-          <span
-            className="brand-name"
-            style={{
-              fontSize: "1.8rem",
-              letterSpacing: "0.08em",
-              color: "#0d1117",
-              fontFamily: "'Plus Jakarta Sans', sans-serif",
-              textDecoration: "none",
-              borderBottom: "none",
-            }}
-          >
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-950 p-4 transition-colors duration-300">
+      <div className="w-full max-w-md space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+        <div className="text-center">
+          <div className="mx-auto h-12 w-12 bg-primary-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-primary-500/20">
+            <Briefcase size={28} />
+          </div>
+          <h1 className="mt-6 text-3xl font-bold tracking-tight text-gray-900 dark:text-white">
+            DTMS
+          </h1>
+          <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
             Digital Talent Management System
-            <ul></ul>
-          </span>
+          </p>
         </div>
 
-        <h2
-          style={{
-            fontSize: "1.4rem",
-            marginBottom: "4px",
-            marginTop: "-4px",
-            fontFamily: "'Plus Jakarta Sans', sans-serif",
-          }}
-        >
-          Welcome back
-        </h2>
-        <p className="sub" style={{ marginBottom: "20px" }}>
-          Sign in to continue to your account.
-        </p>
-
-        {error && <div className="msg error">{error}</div>}
-        {success && <div className="msg success">{success}</div>}
-
-        <form onSubmit={handleSubmit}>
-          <div className="form-group">
-            <label>Email Address</label>
-            <input
-              type="email"
-              name="email"
-              placeholder="rynixsoft@gmail.com"
-              value={form.email}
-              onChange={handleChange}
-              required
-            />
-          </div>
-
-          <div className="form-group">
-            <label>Password</label>
-            <div style={{ position: "relative" }}>
-              <input
-                type={showPassword ? "text" : "password"}
-                name="password"
-                placeholder="Your password"
-                value={form.password}
+        <Card className="border-none shadow-xl bg-white/80 backdrop-blur-sm dark:bg-gray-900/80">
+          <CardHeader className="space-y-1 text-center">
+            <CardTitle className="text-2xl font-bold">Welcome back</CardTitle>
+            <CardDescription>
+              Sign in to continue to your account
+            </CardDescription>
+          </CardHeader>
+          <form onSubmit={handleSubmit}>
+            <CardContent className="space-y-4">
+              <Input
+                label="Email Address"
+                type="email"
+                name="email"
+                placeholder="name@example.com"
+                value={form.email}
                 onChange={handleChange}
                 required
-                style={{ paddingRight: "44px" }}
-                autoComplete="current-password"
               />
-              <span
-                onClick={() => setShowPassword(!showPassword)}
-                style={{
-                  position: "absolute",
-                  right: "14px",
-                  top: "50%",
-                  transform: "translateY(-50%)",
-                  cursor: "pointer",
-                  color: "#9ca3af",
-                  fontSize: "1rem",
-                  userSelect: "none",
-                }}
-              >
-                {showPassword ? (
-                  <svg
-                    width="18"
-                    height="18"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                    Password
+                  </label>
+                  <Link
+                    to="/forgot-password"
+                    className="text-xs font-medium text-primary-600 hover:text-primary-500 transition-colors"
                   >
-                    <path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94" />
-                    <path d="M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19" />
-                    <line x1="1" y1="1" x2="23" y2="23" />
-                  </svg>
-                ) : (
-                  <svg
-                    width="18"
-                    height="18"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
+                    Forgot password?
+                  </Link>
+                </div>
+                <div className="relative">
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    name="password"
+                    placeholder="••••••••"
+                    className="flex h-10 w-full rounded-md border border-gray-200 bg-white px-3 py-2 text-sm ring-offset-white file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-gray-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 dark:border-gray-800 dark:bg-gray-950 dark:ring-offset-gray-950 dark:placeholder:text-gray-400 dark:focus-visible:ring-primary-300 transition-all"
+                    value={form.password}
+                    onChange={handleChange}
+                    required
+                  />
+                  <button
+                    type="button"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                    onClick={() => setShowPassword(!showPassword)}
                   >
-                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
-                    <circle cx="12" cy="12" r="3" />
-                  </svg>
-                )}
-              </span>
-            </div>
-          </div>
+                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
+                </div>
+              </div>
+            </CardContent>
+            <CardFooter className="flex flex-col gap-4">
+              <Button type="submit" className="w-full" isLoading={loading}>
+                Sign In
+              </Button>
+              <div className="relative w-full">
+                <div className="absolute inset-0 flex items-center">
+                  <span className="w-full border-t border-gray-200 dark:border-gray-800" />
+                </div>
+                <div className="relative flex justify-center text-xs uppercase">
+                  <span className="bg-white px-2 text-gray-500 dark:bg-gray-900 dark:text-gray-400">
+                    Or continue with
+                  </span>
+                </div>
+              </div>
+              <div className="flex justify-center w-full">
+                <GoogleLogin
+                  onSuccess={handleGoogleSuccess}
+                  onError={() => toast.error("Google Login failed")}
+                  useOneTap
+                  theme="outline"
+                  shape="pill"
+                />
+              </div>
+            </CardFooter>
+          </form>
+        </Card>
 
-          <button type="submit" className="btn" disabled={loading}>
-            {loading ? "Signing in..." : "Sign In"}
-          </button>
-          <div style={{ textAlign: "right", marginTop: "8px" }}>
-            <Link
-              to="/forgot-password"
-              style={{
-                fontSize: ".82rem",
-                color: "#0d1117",
-                textDecoration: "none",
-                fontWeight: "600",
-              }}
-            >
-              Forgot Password?
-            </Link>
-          </div>
-        </form>
-
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: "10px",
-            margin: "20px 0",
-          }}
-        >
-          <div style={{ flex: 1, height: "1px", background: "#e0e0d8" }}></div>
-          <span style={{ color: "#8C8A82", fontSize: ".8rem" }}>
-            or continue with
-          </span>
-          <div style={{ flex: 1, height: "1px", background: "#e0e0d8" }}></div>
-        </div>
-
-        <div style={{ display: "flex", justifyContent: "center" }}>
-          <GoogleLogin
-            onSuccess={handleGoogleSuccess}
-            onError={handleGoogleError}
-            width="360"
-            text="continue_with"
-            shape="rectangular"
-            theme="outline"
-          />
-        </div>
-        <div className="switch-link" style={{ marginTop: "20px" }}>
-          Don't have an account? <Link to="/register">Register one</Link>
-        </div>
+        <p className="text-center text-sm text-gray-500 dark:text-gray-400">
+          Don't have an account?{" "}
+          <Link
+            to="/register"
+            className="font-semibold text-primary-600 hover:text-primary-500 transition-colors"
+          >
+            Create Account
+          </Link>
+        </p>
       </div>
     </div>
   );

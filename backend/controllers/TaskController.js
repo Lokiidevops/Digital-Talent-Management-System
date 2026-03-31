@@ -29,7 +29,9 @@ const normalizeDeadline = (deadline) => {
 };
 
 const populateTask = (query) =>
-  query.populate("assignedUser", "name email").populate("submittedBy", "name email");
+  query
+    .populate("assignedUser", "name email")
+    .populate("submittedBy", "name email");
 
 // Admin: Create Task
 exports.createTask = async (req, res) => {
@@ -37,7 +39,8 @@ exports.createTask = async (req, res) => {
     const assignedUser = await resolveAssignedUserId(req.body);
     if (!assignedUser) {
       return res.status(400).json({
-        message: "assignedUser is required (use assignedUserId or assignedUserEmail)",
+        message:
+          "assignedUser is required (use assignedUserId or assignedUserEmail)",
       });
     }
 
@@ -53,22 +56,25 @@ exports.createTask = async (req, res) => {
     const populated = await populateTask(Task.findById(task._id));
     return res.json(populated);
   } catch (err) {
-    return res.status(400).json({ message: err.message || "Failed to create task" });
+    return res
+      .status(400)
+      .json({ message: err.message || "Failed to create task" });
   }
 };
 
 // Admin: Get All Tasks
 exports.getTasks = async (req, res) => {
-  const tasks = await populateTask(
-    Task.find().sort({ createdAt: -1 }),
-  );
+  const tasks = await populateTask(Task.find().sort({ createdAt: -1 }));
   return res.json(tasks);
 };
 
 // User: Get Tasks assigned to me
 exports.getMyTasks = async (req, res) => {
   const tasks = await populateTask(
-    Task.find({ assignedUser: req.user._id }).sort({ deadline: 1, createdAt: -1 }),
+    Task.find({ assignedUser: req.user._id }).sort({
+      deadline: 1,
+      createdAt: -1,
+    }),
   );
   return res.json(tasks);
 };
@@ -80,14 +86,17 @@ exports.updateTask = async (req, res) => {
 
   const updates = {};
   if (typeof req.body.title === "string") updates.title = req.body.title;
-  if (typeof req.body.description === "string") updates.description = req.body.description;
+  if (typeof req.body.description === "string")
+    updates.description = req.body.description;
   if (Object.prototype.hasOwnProperty.call(req.body, "deadline")) {
     updates.deadline = normalizeDeadline(req.body.deadline);
   }
   if (req.body.priority) updates.priority = req.body.priority;
 
   const shouldUpdateAssigned =
-    req.body.assignedUserId || req.body.assignedUserEmail || req.body.assignedUser;
+    req.body.assignedUserId ||
+    req.body.assignedUserEmail ||
+    req.body.assignedUser;
   if (shouldUpdateAssigned) {
     updates.assignedUser = await resolveAssignedUserId(req.body);
   }
@@ -113,7 +122,9 @@ exports.submitTask = async (req, res) => {
 
   const isAdmin = req.user?.role === "admin";
   if (!isAdmin && String(task.assignedUser) !== String(req.user._id)) {
-    return res.status(403).json({ message: "You can only submit your assigned task" });
+    return res
+      .status(403)
+      .json({ message: "You can only submit your assigned task" });
   }
 
   const submissionText = String(
@@ -144,20 +155,26 @@ exports.submitTask = async (req, res) => {
 exports.getAdminStats = async (req, res) => {
   const now = new Date();
 
-  const [total, completed, pending, submitted, overdue, statusCounts, priorityCounts] =
-    await Promise.all([
-      Task.countDocuments(),
-      Task.countDocuments({ status: "completed" }),
-      Task.countDocuments({ status: "pending" }),
-      Task.countDocuments({ status: "submitted" }),
-      Task.countDocuments({ status: { $ne: "completed" }, deadline: { $lt: now } }),
-      Task.aggregate([
-        { $group: { _id: "$status", count: { $sum: 1 } } },
-      ]),
-      Task.aggregate([
-        { $group: { _id: "$priority", count: { $sum: 1 } } },
-      ]),
-    ]);
+  const [
+    total,
+    completed,
+    pending,
+    submitted,
+    overdue,
+    statusCounts,
+    priorityCounts,
+  ] = await Promise.all([
+    Task.countDocuments(),
+    Task.countDocuments({ status: "completed" }),
+    Task.countDocuments({ status: "pending" }),
+    Task.countDocuments({ status: "submitted" }),
+    Task.countDocuments({
+      status: { $ne: "completed" },
+      deadline: { $lt: now },
+    }),
+    Task.aggregate([{ $group: { _id: "$status", count: { $sum: 1 } } }]),
+    Task.aggregate([{ $group: { _id: "$priority", count: { $sum: 1 } } }]),
+  ]);
 
   const statusCountsObj = statusCounts.reduce((acc, s) => {
     acc[s._id] = s.count;

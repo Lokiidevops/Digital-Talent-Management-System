@@ -3,7 +3,14 @@ import { Link, useNavigate } from "react-router-dom";
 import { forgotPassword, verifyOTP, resetPassword } from "../services/api";
 import { Button } from "../components/ui/Button";
 import { Input } from "../components/ui/Input";
-import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "../components/ui/Card";
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  CardContent,
+  CardFooter,
+} from "../components/ui/Card";
 import { Briefcase, ArrowLeft } from "lucide-react";
 import { toast } from "react-hot-toast";
 
@@ -77,14 +84,18 @@ const ForgotPassword = () => {
         <Card className="border-none shadow-xl bg-white/80 backdrop-blur-sm dark:bg-gray-900/80">
           <CardHeader className="space-y-1 text-center">
             <CardTitle className="text-2xl font-bold">
-              {step === 1 ? "Forgot Password?" : step === 2 ? "Verify OTP" : "New Password"}
+              {step === 1
+                ? "Forgot Password?"
+                : step === 2
+                  ? "Verify OTP"
+                  : "New Password"}
             </CardTitle>
             <CardDescription>
-              {step === 1 
-                ? "Enter your email to receive an OTP" 
-                : step === 2 
-                ? "Enter the 6-digit code sent to your email" 
-                : "Create a new secure password"}
+              {step === 1
+                ? "Enter your email to receive an OTP"
+                : step === 2
+                  ? "Enter the 6-digit code sent to your email"
+                  : "Create a new secure password"}
             </CardDescription>
           </CardHeader>
 
@@ -131,7 +142,12 @@ const ForgotPassword = () => {
                 <Button type="submit" className="w-full" isLoading={loading}>
                   Verify OTP
                 </Button>
-                <Button variant="ghost" type="button" onClick={() => setStep(1)} className="text-sm">
+                <Button
+                  variant="ghost"
+                  type="button"
+                  onClick={() => setStep(1)}
+                  className="text-sm"
+                >
                   Try another email
                 </Button>
               </CardFooter>

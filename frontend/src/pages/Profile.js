@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+import React, { useState, useRef, useCallback } from "react";
+import Cropper from "react-easy-crop";
 import {
   User,
   Mail,
@@ -24,16 +25,83 @@ import DashboardLayout from "../layouts/DashboardLayout";
 import { toast } from "react-hot-toast";
 import { motion } from "framer-motion";
 
+const createImage = (url) =>
+  new Promise((resolve, reject) => {
+    const image = new Image();
+    image.addEventListener("load", () => resolve(image));
+    image.addEventListener("error", (error) => reject(error));
+    image.setAttribute("crossOrigin", "anonymous");
+    image.src = url;
+  });
+
+const getCroppedImg = async (imageSrc, pixelCrop) => {
+  const image = await createImage(imageSrc);
+  const canvas = document.createElement("canvas");
+  const ctx = canvas.getContext("2d");
+
+  canvas.width = pixelCrop.width;
+  canvas.height = pixelCrop.height;
+
+  ctx.drawImage(
+    image,
+    pixelCrop.x,
+    pixelCrop.y,
+    pixelCrop.width,
+    pixelCrop.height,
+    0,
+    0,
+    pixelCrop.width,
+    pixelCrop.height,
+  );
+
+  return new Promise((resolve) => {
+    canvas.toBlob((file) => {
+      resolve(URL.createObjectURL(file));
+    }, "image/jpeg");
+  });
+};
+
 const ProfilePage = () => {
   const [user, setUser] = useState({
-    name: "John Doe",
-    email: "john.doe@example.com",
+    name: "Lokeshwaran",
+    email: "loki@example.com",
     role: "Senior Developer",
     joinDate: "January 2024",
     avatar: null,
   });
 
   const [isLoading, setIsLoading] = useState(false);
+
+  // Cropper states
+  const [imageSrc, setImageSrc] = useState(null);
+  const [crop, setCrop] = useState({ x: 0, y: 0 });
+  const [zoom, setZoom] = useState(1);
+  const [croppedAreaPixels, setCroppedAreaPixels] = useState(null);
+  const fileInputRef = useRef(null);
+
+  const onCropComplete = useCallback((croppedArea, croppedAreaPixels) => {
+    setCroppedAreaPixels(croppedAreaPixels);
+  }, []);
+
+  const handleFileChange = (e) => {
+    if (e.target.files && e.target.files.length > 0) {
+      const reader = new FileReader();
+      reader.addEventListener("load", () => setImageSrc(reader.result));
+      reader.readAsDataURL(e.target.files[0]);
+    }
+  };
+
+  const handleCropSubmit = async () => {
+    try {
+      const croppedImage = await getCroppedImg(imageSrc, croppedAreaPixels);
+      setUser((prev) => ({ ...prev, avatar: croppedImage }));
+      setImageSrc(null); // close cropper
+      toast.success("Profile photo updated!");
+    } catch (e) {
+      console.error(e);
+      toast.error("Failed to crop image.");
+    }
+  };
 
   const handleUpdateProfile = (e) => {
     e.preventDefault();
@@ -62,10 +130,29 @@ const ProfilePage = () => {
           <div className="space-y-6">
             <Card className="text-center p-6 border-none shadow-sm">
               <div className="relative inline-block group">
-                <div className="h-32 w-32 rounded-full bg-primary-100 dark:bg-primary-900/30 flex items-center justify-center text-primary-600 dark:text-primary-400 text-4xl font-bold border-4 border-white dark:border-gray-800 shadow-lg mx-auto">
-                  {user.name?.[0]?.toUpperCase() || "U"}
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  ref={fileInputRef}
+                  onChange={handleFileChange}
+                />
+                <div className="h-32 w-32 rounded-full overflow-hidden bg-primary-100 dark:bg-primary-900/30 flex items-center justify-center text-primary-600 dark:text-primary-400 text-4xl font-bold border-4 border-white dark:border-gray-800 shadow-lg mx-auto">
+                  {user.avatar ? (
+                    <img
+                      src={user.avatar}
+                      alt="Avatar"
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    user.name?.[0]?.toUpperCase() || "U"
+                  )}
                 </div>
-                <button className="absolute bottom-0 right-0 p-2 rounded-full bg-white dark:bg-gray-800 shadow-md border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition-all group-hover:scale-110">
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="absolute bottom-0 right-0 p-2 rounded-full bg-white dark:bg-gray-800 shadow-md border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition-all group-hover:scale-110"
+                >
                   <Camera
                     size={18}
                     className="text-gray-600 dark:text-gray-300"
@@ -159,7 +246,7 @@ const ProfilePage = () => {
                         onChange={(e) =>
                           setUser({ ...user, name: e.target.value })
                         }
-                        placeholder="John Doe"
+                        placeholder="Lokesh waran"
                       />
                       <Input
                         label="Email Address"
@@ -168,7 +255,7 @@ const ProfilePage = () => {
                         onChange={(e) =>
                           setUser({ ...user, email: e.target.value })
                         }
-                        placeholder="john@example.com"
+                        placeholder="rynixsoft@gmail.com"
                       />
                     </div>
 
@@ -228,6 +315,59 @@ const ProfilePage = () => {
           </div>
         </div>
       </div>
+
+      {/* Cropper Modal */}
+      {imageSrc && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+          <Card className="w-full max-w-lg border-none shadow-2xl overflow-hidden">
+            <CardHeader className="border-b border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 pb-4">
+              <CardTitle>Crop Profile Photo</CardTitle>
+            </CardHeader>
+            <div className="relative h-64 sm:h-80 w-full bg-gray-50 dark:bg-black">
+              <Cropper
+                image={imageSrc}
+                crop={crop}
+                zoom={zoom}
+                aspect={1}
+                cropShape="round"
+                showGrid={false}
+                onCropChange={setCrop}
+                onCropComplete={onCropComplete}
+                onZoomChange={setZoom}
+              />
+            </div>
+            <div className="p-4 bg-white dark:bg-gray-900 space-y-4">
+              <div className="flex items-center gap-4">
+                <span className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                  Zoom
+                </span>
+                <input
+                  type="range"
+                  value={zoom}
+                  min={1}
+                  max={3}
+                  step={0.1}
+                  aria-labelledby="Zoom"
+                  onChange={(e) => setZoom(e.target.value)}
+                  className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700"
+                />
+              </div>
+              <div className="flex justify-end gap-3">
+                <Button
+                  variant="secondary"
+                  onClick={() => setImageSrc(null)}
+                  type="button"
+                >
+                  Cancel
+                </Button>
+                <Button onClick={handleCropSubmit} type="button">
+                  Apply Photo
+                </Button>
+              </div>
+            </div>
+          </Card>
+        </div>
+      )}
     </DashboardLayout>
   );
 };

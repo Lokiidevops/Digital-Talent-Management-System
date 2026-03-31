@@ -4,7 +4,14 @@ import { loginUser } from "../services/api";
 import { GoogleLogin } from "@react-oauth/google";
 import { Button } from "../components/ui/Button";
 import { Input } from "../components/ui/Input";
-import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "../components/ui/Card";
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  CardContent,
+  CardFooter,
+} from "../components/ui/Card";
 import { Briefcase, Eye, EyeOff } from "lucide-react";
 import { toast } from "react-hot-toast";
 
@@ -68,7 +75,7 @@ const Login = () => {
                 label="Email Address"
                 type="email"
                 name="email"
-                placeholder="name@example.com"
+                placeholder="rynixsoft@gmail.com"
                 value={form.email}
                 onChange={handleChange}
                 required

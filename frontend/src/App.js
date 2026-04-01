@@ -7,6 +7,7 @@ import Dashboard from "./pages/Dashboard";
 import Tasks from "./pages/Tasks"; // ✅ fixed
 import Profile from "./pages/Profile";
 import TwoFactorVerification from "./pages/TwoFactorVerification";
+import Notifications from "./pages/Notifications";
 
 function App() {
   return (
@@ -19,6 +20,7 @@ function App() {
         <Route path="/verify" element={<TwoFactorVerification />} />
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/tasks" element={<Tasks />} /> {/* ✅ fixed */}
+        <Route path="/notifications" element={<Notifications />} />
         <Route path="/profile" element={<Profile />} />
         <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>

@@ -40,7 +40,7 @@ const TwoFactorVerification = () => {
     toast.success(
       `A new code has been sent to your ${
         method === "email" ? "email address" : "mobile number"
-      }`
+      }`,
     );
   };
 
@@ -113,9 +113,7 @@ const TwoFactorVerification = () => {
                     .
                   </p>
                   <p className="font-semibold text-gray-900 dark:text-white">
-                    {method === "email"
-                      ? "lo***@email.com"
-                      : "+91 98*** ***89"}
+                    {method === "email" ? "lo***@email.com" : "+91 98*** ***89"}
                   </p>
                 </motion.div>
               </AnimatePresence>
@@ -127,7 +125,9 @@ const TwoFactorVerification = () => {
                   maxLength={6}
                   placeholder="000000"
                   value={code}
-                  onChange={(e) => setCode(e.target.value.replace(/[^0-9]/g, ""))}
+                  onChange={(e) =>
+                    setCode(e.target.value.replace(/[^0-9]/g, ""))
+                  }
                   className="text-center text-2xl tracking-[0.5em] font-mono h-14"
                   required
                 />
@@ -135,7 +135,11 @@ const TwoFactorVerification = () => {
             </CardContent>
 
             <CardFooter className="flex flex-col gap-4 pb-8">
-              <Button type="submit" className="w-full gap-2" isLoading={loading}>
+              <Button
+                type="submit"
+                className="w-full gap-2"
+                isLoading={loading}
+              >
                 Verify Identity <ArrowRight size={18} />
               </Button>
 

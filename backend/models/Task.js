@@ -10,6 +10,8 @@ const taskSchema = new mongoose.Schema(
       default: "pending",
     },
     submission: { type: String, default: "" },
+    taskFileUrl: { type: String, default: "" },
+    taskFileType: { type: String, default: "" },
   },
   { timestamps: true },
 );

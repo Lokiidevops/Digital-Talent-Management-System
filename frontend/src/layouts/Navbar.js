@@ -1,4 +1,5 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
 import {
   Search,
   Bell,
@@ -12,9 +13,28 @@ import {
 } from "lucide-react";
 import { Button } from "../components/ui/Button";
 import { cn } from "../utils/cn";
+import { getNotifications } from "../services/api";
 
 const Navbar = ({ setMobileOpen, dark, setDark }) => {
   const user = JSON.parse(localStorage.getItem("user") || "{}");
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  useEffect(() => {
+    const fetchNotifications = async () => {
+      try {
+        const { data } = await getNotifications();
+        const unread = data.filter((n) => !n.isRead).length;
+        setUnreadCount(unread);
+      } catch (err) {
+        console.error("Failed to load notifications", err);
+      }
+    };
+    fetchNotifications();
+
+    // Optional polling every 30s to keep it updated
+    const intervalId = setInterval(fetchNotifications, 30000);
+    return () => clearInterval(intervalId);
+  }, []);
 
   return (
     <header className="sticky top-0 z-30 flex h-16 w-full items-center justify-between border-b border-gray-200 bg-white/80 px-4 backdrop-blur-md dark:border-gray-800 dark:bg-gray-900/80">
@@ -54,14 +74,20 @@ const Navbar = ({ setMobileOpen, dark, setDark }) => {
         </Button>
 
         {/* Notifications */}
-        <Button
-          variant="ghost"
-          size="icon"
-          className="relative text-gray-500 dark:text-gray-400"
-        >
-          <Bell className="h-5 w-5" />
-          <span className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-red-500 border-2 border-white dark:border-gray-900"></span>
-        </Button>
+        <Link to="/notifications">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="relative text-gray-500 dark:text-gray-400"
+          >
+            <Bell className="h-5 w-5" />
+            {unreadCount > 0 && (
+              <span className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-red-500 border-2 border-white dark:border-gray-900 flex items-center justify-center text-[10px] text-white">
+                <span className="sr-only">New notifications</span>
+              </span>
+            )}
+          </Button>
+        </Link>
 
         {/* User Profile */}
         <div className="flex items-center gap-3 pl-2 border-l border-gray-200 dark:border-gray-800">

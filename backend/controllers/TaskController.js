@@ -1,5 +1,6 @@
 const Task = require("../models/Task");
 const User = require("../models/User");
+const Notification = require("../models/Notification");
 
 const resolveAssignedUserId = async (body) => {
   const assignedUserId =
@@ -44,6 +45,14 @@ exports.createTask = async (req, res) => {
       });
     }
 
+    let taskFileUrl = "";
+    let taskFileType = "";
+    if (req.file) {
+      taskFileUrl = `/uploads/tasks/${req.file.filename}`;
+      // Just extract extension for taskFileType or use mimetype
+      taskFileType = req.file.mimetype;
+    }
+
     const task = await Task.create({
       title: req.body.title,
       description: req.body.description || "",
@@ -51,6 +60,15 @@ exports.createTask = async (req, res) => {
       priority: req.body.priority || "medium",
       assignedUser,
       status: "pending",
+      taskFileUrl,
+      taskFileType,
+    });
+
+    // Create Notification
+    await Notification.create({
+      userId: assignedUser,
+      message: `You have been assigned a new task: ${task.title}`,
+      relatedTaskId: task._id
     });
 
     const populated = await populateTask(Task.findById(task._id));

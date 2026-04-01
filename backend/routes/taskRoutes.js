@@ -1,5 +1,6 @@
 const express = require("express");
 const router = express.Router();
+const upload = require("../middleware/uploadMiddleware");
 
 const {
   createTask,
@@ -9,7 +10,7 @@ const {
   submitTask,
 } = require("../controllers/TaskController");
 
-router.post("/", createTask);
+router.post("/", upload.single("file"), createTask);
 router.put("/:id", updateTask);
 router.delete("/:id", deleteTask);
 

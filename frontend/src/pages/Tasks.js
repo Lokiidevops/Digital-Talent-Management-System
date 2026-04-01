@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Plus,
   Search,
@@ -10,6 +10,7 @@ import {
   ChevronLeft,
   Calendar,
   AlertCircle,
+  Paperclip,
 } from "lucide-react";
 import {
   Card,
@@ -24,56 +25,50 @@ import DashboardLayout from "../layouts/DashboardLayout";
 import Modal from "../components/ui/Modal";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "react-hot-toast";
-
-const dummyTasks = [
-  {
-    id: 1,
-    title: "Design Landing Page",
-    priority: "high",
-    status: "in-progress",
-    dueDate: "2024-03-28",
-    user: "Rahul",
-  },
-  {
-    id: 2,
-    title: "Develop API Endpoints",
-    priority: "medium",
-    status: "pending",
-    dueDate: "2024-03-30",
-    user: "Pranesh",
-  },
-  {
-    id: 3,
-    title: "User Testing",
-    priority: "low",
-    status: "completed",
-    dueDate: "2024-03-25",
-    user: "Mike Johnson",
-  },
-  {
-    id: 4,
-    title: "Bug Fixing - Auth Flow",
-    priority: "high",
-    status: "overdue",
-    dueDate: "2024-03-20",
-    user: "Ram",
-  },
-  {
-    id: 5,
-    title: "Documentation Update",
-    priority: "medium",
-    status: "in-progress",
-    dueDate: "2024-04-05",
-    user: "Barath",
-  },
-];
+import { getTasks, createTask, deleteTask, getUsers } from "../services/api";
 
 const TaskPage = () => {
-  const [tasks, setTasks] = useState(dummyTasks);
+  const [tasks, setTasks] = useState([]);
+  const [users, setUsers] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [selectedTask, setSelectedTask] = useState(null);
   const [filterStatus, setFilterStatus] = useState("all");
+  const [loading, setLoading] = useState(true);
+
+  // New task form state
+  const [newTask, setNewTask] = useState({
+    title: "",
+    priority: "medium",
+    deadline: "",
+    description: "",
+    assignedUser: "",
+  });
+  const [file, setFile] = useState(null);
+
+  useEffect(() => {
+    fetchTasks();
+    fetchUsers();
+  }, []);
+
+  const fetchTasks = async () => {
+    try {
+      const { data } = await getTasks();
+      setTasks(data);
+    } catch (err) {
+      toast.error("Failed to load tasks");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchUsers = async () => {
+    try {
+      const { data } = await getUsers();
+      setUsers(data);
+    } catch (err) {
+      toast.error("Failed to load users");
+    }
+  };
 
   const getPriorityBadge = (priority) => {
     switch (priority) {
@@ -111,6 +106,12 @@ const TaskPage = () => {
             Pending
           </Badge>
         );
+      case "submitted":
+        return (
+          <Badge variant="success" className="bg-green-100 text-green-800 rounded-md">
+            Submitted
+          </Badge>
+        );
       case "overdue":
         return (
           <Badge variant="danger" className="rounded-md">
@@ -128,17 +129,49 @@ const TaskPage = () => {
 
   const filteredTasks = tasks.filter((task) => {
     const matchesSearch = task.title
-      .toLowerCase()
+      ?.toLowerCase()
       .includes(searchTerm.toLowerCase());
     const matchesStatus =
       filterStatus === "all" || task.status === filterStatus;
     return matchesSearch && matchesStatus;
   });
 
-  const handleDeleteTask = (id) => {
+  const handleDeleteTask = async (id) => {
     if (window.confirm("Are you sure you want to delete this task?")) {
-      setTasks(tasks.filter((t) => t.id !== id));
-      toast.success("Task deleted successfully");
+      try {
+        await deleteTask(id);
+        setTasks(tasks.filter((t) => t._id !== id));
+        toast.success("Task deleted successfully");
+      } catch (err) {
+        toast.error("Failed to delete task");
+      }
+    }
+  };
+
+  const handleCreateTask = async () => {
+    if (!newTask.title || !newTask.assignedUser) {
+      return toast.error("Title and Assigned User are required");
+    }
+
+    try {
+      const formData = new FormData();
+      formData.append("title", newTask.title);
+      formData.append("priority", newTask.priority);
+      if (newTask.deadline) formData.append("deadline", newTask.deadline);
+      formData.append("description", newTask.description);
+      formData.append("assignedUser", newTask.assignedUser);
+      if (file) {
+        formData.append("file", file);
+      }
+
+      await createTask(formData);
+      toast.success("Task created successfully!");
+      setIsModalOpen(false);
+      setNewTask({ title: "", priority: "medium", deadline: "", description: "", assignedUser: "" });
+      setFile(null);
+      fetchTasks();
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Error creating task");
     }
   };
 
@@ -185,6 +218,7 @@ const TaskPage = () => {
                 <option value="all">All Status</option>
                 <option value="pending">Pending</option>
                 <option value="in-progress">In Progress</option>
+                <option value="submitted">Submitted</option>
                 <option value="completed">Completed</option>
                 <option value="overdue">Overdue</option>
               </select>
@@ -220,9 +254,15 @@ const TaskPage = () => {
               </thead>
               <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
                 <AnimatePresence mode="popLayout">
-                  {filteredTasks.map((task) => (
+                  {loading ? (
+                    <tr>
+                      <td colSpan="5" className="px-6 py-8 text-center text-gray-500">
+                        Loading tasks...
+                      </td>
+                    </tr>
+                  ) : filteredTasks.map((task) => (
                     <motion.tr
-                      key={task.id}
+                      key={task._id}
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 1 }}
                       exit={{ opacity: 0 }}
@@ -231,11 +271,12 @@ const TaskPage = () => {
                     >
                       <td className="px-6 py-4">
                         <div className="flex flex-col">
-                          <span className="font-medium text-gray-900 dark:text-white group-hover:text-primary-600 transition-colors">
+                          <span className="font-medium flex items-center gap-1 text-gray-900 dark:text-white group-hover:text-primary-600 transition-colors">
                             {task.title}
+                            {task.taskFileUrl && <Paperclip size={14} className="text-gray-400" />}
                           </span>
                           <span className="text-xs text-gray-500 dark:text-gray-400">
-                            Assigned to {task.user}
+                            Assigned to {task.assignedUser?.name || "Unassigned"}
                           </span>
                         </div>
                       </td>
@@ -248,23 +289,26 @@ const TaskPage = () => {
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
                           <Calendar size={14} />
-                          {task.dueDate}
+                          {task.deadline ? new Date(task.deadline).toLocaleDateString() : "No Deadline"}
                         </div>
                       </td>
                       <td className="px-6 py-4 text-right">
                         <div className="flex justify-end gap-2">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8 text-gray-500 hover:text-primary-600"
-                          >
-                            <Edit2 size={16} />
-                          </Button>
+                          {task.taskFileUrl && (
+                            <a 
+                              href={`http://localhost:5000${task.taskFileUrl}`} 
+                              target="_blank" 
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center justify-center h-8 w-8 rounded-md text-gray-500 hover:text-primary-600 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                            >
+                              <Paperclip size={16} />
+                            </a>
+                          )}
                           <Button
                             variant="ghost"
                             size="icon"
                             className="h-8 w-8 text-gray-500 hover:text-red-600"
-                            onClick={() => handleDeleteTask(task.id)}
+                            onClick={() => handleDeleteTask(task._id)}
                           >
                             <Trash2 size={16} />
                           </Button>
@@ -276,7 +320,7 @@ const TaskPage = () => {
               </tbody>
             </table>
           </div>
-          {filteredTasks.length === 0 && (
+          {!loading && filteredTasks.length === 0 && (
             <div className="p-12 text-center">
               <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-400 mb-4">
                 <AlertCircle size={24} />
@@ -316,32 +360,69 @@ const TaskPage = () => {
             <Button variant="secondary" onClick={() => setIsModalOpen(false)}>
               Cancel
             </Button>
-            <Button
-              onClick={() => {
-                toast.success("Task created successfully!");
-                setIsModalOpen(false);
-              }}
-            >
-              Create Task
-            </Button>
+            <Button onClick={handleCreateTask}>Create Task</Button>
           </>
         }
       >
         <div className="space-y-4">
-          <Input label="Task Title" placeholder="Enter task name" />
+          <Input 
+            label="Task Title" 
+            placeholder="Enter task name" 
+            value={newTask.title} 
+            onChange={(e) => setNewTask({...newTask, title: e.target.value})} 
+          />
+          
+          <div className="space-y-1.5">
+            <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+              Assigned User
+            </label>
+            <select 
+              className="w-full h-10 px-3 py-2 rounded-md border border-gray-200 bg-white text-sm dark:border-gray-800 dark:bg-gray-950"
+              value={newTask.assignedUser}
+              onChange={(e) => setNewTask({...newTask, assignedUser: e.target.value})}
+            >
+              <option value="">Select a user</option>
+              {users.map(u => (
+                <option key={u._id} value={u._id}>{u.name} ({u.email})</option>
+              ))}
+            </select>
+          </div>
+
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">
               <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
                 Priority
               </label>
-              <select className="w-full h-10 px-3 py-2 rounded-md border border-gray-200 bg-white text-sm dark:border-gray-800 dark:bg-gray-950">
+              <select 
+                className="w-full h-10 px-3 py-2 rounded-md border border-gray-200 bg-white text-sm dark:border-gray-800 dark:bg-gray-950"
+                value={newTask.priority}
+                onChange={(e) => setNewTask({...newTask, priority: e.target.value})}
+              >
                 <option value="low">Low</option>
                 <option value="medium">Medium</option>
                 <option value="high">High</option>
               </select>
             </div>
-            <Input label="Due Date" type="date" />
+            <Input 
+              label="Due Date" 
+              type="date" 
+              value={newTask.deadline}
+              onChange={(e) => setNewTask({...newTask, deadline: e.target.value})}
+            />
           </div>
+          
+          <div className="space-y-1.5">
+            <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+              Upload File (Image/Document)
+            </label>
+            <input 
+              type="file" 
+              accept=".jpg,.jpeg,.png,.gif,.pdf,.doc,.docx"
+              onChange={(e) => setFile(e.target.files[0])}
+              className="w-full px-3 py-2 rounded-md border border-gray-200 bg-white text-sm dark:border-gray-800 dark:bg-gray-950"
+            />
+          </div>
+
           <div className="space-y-1.5">
             <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
               Description
@@ -349,6 +430,8 @@ const TaskPage = () => {
             <textarea
               className="w-full min-h-[100px] px-3 py-2 rounded-md border border-gray-200 bg-white text-sm dark:border-gray-800 dark:bg-gray-950 focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500"
               placeholder="What needs to be done?"
+              value={newTask.description}
+              onChange={(e) => setNewTask({...newTask, description: e.target.value})}
             />
           </div>
         </div>

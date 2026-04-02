@@ -8,11 +8,23 @@ const fs = require("fs");
 const app = express();
 connectDB();
 
-app.use(cors({ origin: "http://localhost:3000" }));
-app.use(express.json());
+app.use(cors({ 
+  origin: ["http://localhost:3000", "http://127.0.0.1:3000"],
+  methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"],
+  credentials: true 
+}));
+app.use(express.json({ limit: "10mb" }));
+app.use(express.urlencoded({ limit: "10mb", extended: true }));
+
+// Log incoming requests for debugging
+app.use((req, res, next) => {
+  console.log(`${req.method} ${req.url}`);
+  next();
+});
 
 app.use("/api/auth", require("./routes/authRoutes"));
-app.use("/api/auth", require("./routes/forgotRoutes"));
+app.use("/api/forgot", require("./routes/forgotRoutes"));
 
 const uploadsDir = path.join(__dirname, "uploads");
 fs.mkdirSync(path.join(uploadsDir, "submissions"), { recursive: true });

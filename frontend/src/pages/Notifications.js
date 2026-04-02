@@ -22,9 +22,11 @@ const NotificationsPage = () => {
   const fetchNotifications = async () => {
     try {
       const { data } = await getNotifications();
-      setNotifications(data);
+      // data should be an array; if it's not, we should check why.
+      setNotifications(Array.isArray(data) ? data : []);
     } catch (err) {
-      toast.error("Failed to load notifications");
+      console.error("DEBUG: fetchNotifications error:", err.response || err);
+      toast.error(err.response?.data?.message || "Failed to load notifications");
     } finally {
       setLoading(false);
     }

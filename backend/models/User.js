@@ -24,6 +24,18 @@ const userSchema = new mongoose.Schema(
       required: true,
       minlength: 6,
     },
+    profilePhoto: {
+      type: String,
+      default: "",
+    },
+    twoFactorEnabled: {
+      type: Boolean,
+      default: false,
+    },
+    twoFactorSecret: {
+      type: String,
+      default: "",
+    },
   },
   { timestamps: true },
 );

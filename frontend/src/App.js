@@ -8,8 +8,10 @@ import Tasks from "./pages/Tasks"; // ✅ fixed
 import Profile from "./pages/Profile";
 import TwoFactorVerification from "./pages/TwoFactorVerification";
 import Notifications from "./pages/Notifications";
+import ProtectedRoute from "./components/ProtectedRoute";
 
 function App() {
+  console.log("App Rendering: Path is", window.location.pathname);
   return (
     <BrowserRouter>
       <Routes>
@@ -19,7 +21,7 @@ function App() {
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/verify" element={<TwoFactorVerification />} />
         <Route path="/dashboard" element={<Dashboard />} />
-        <Route path="/tasks" element={<Tasks />} /> {/* ✅ fixed */}
+        <Route path="/tasks" element={<Tasks />} />
         <Route path="/notifications" element={<Notifications />} />
         <Route path="/profile" element={<Profile />} />
         <Route path="*" element={<Navigate to="/login" replace />} />

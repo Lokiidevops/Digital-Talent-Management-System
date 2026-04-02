@@ -10,7 +10,7 @@ const {
 router.use(protect);
 
 router.get("/", getNotifications);
-router.put("/read-all", markAllAsRead);
+router.put("/read-all", markAllAsRead);   // must be before /:id/read
 router.put("/:id/read", markAsRead);
 
 module.exports = router;

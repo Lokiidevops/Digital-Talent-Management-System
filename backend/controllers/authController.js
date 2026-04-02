@@ -69,4 +69,56 @@ const getUsers = async (req, res) => {
   }
 };
 
-module.exports = { register, login, getUsers };
+const updateProfile = async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id);
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    if (req.body.email && req.body.email !== user.email) {
+      const exists = await User.findOne({ email: req.body.email });
+      if (exists) return res.status(409).json({ message: "Email already in use" });
+      user.email = req.body.email;
+    }
+    if (req.body.name) user.name = req.body.name;
+    if (req.body.profilePhoto) user.profilePhoto = req.body.profilePhoto;
+    
+    if (req.body.password) {
+      user.password = req.body.password;
+    }
+
+    await user.save();
+    
+    res.json({
+      message: "Profile updated successfully",
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        profilePhoto: user.profilePhoto,
+        twoFactorEnabled: user.twoFactorEnabled,
+      }
+    });
+  } catch (err) {
+    res.status(500).json({ message: "Server error", error: err.message });
+  }
+};
+
+const toggle2FA = async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id);
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    user.twoFactorEnabled = !user.twoFactorEnabled;
+    await user.save();
+    
+    res.json({
+      message: `2FA ${user.twoFactorEnabled ? 'enabled' : 'disabled'} successfully`,
+      twoFactorEnabled: user.twoFactorEnabled
+    });
+  } catch (err) {
+    res.status(500).json({ message: "Server error", error: err.message });
+  }
+};
+
+module.exports = { register, login, getUsers, updateProfile, toggle2FA };

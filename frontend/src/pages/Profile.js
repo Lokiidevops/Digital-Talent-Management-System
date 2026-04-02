@@ -24,6 +24,7 @@ import { Input } from "../components/ui/Input";
 import DashboardLayout from "../layouts/DashboardLayout";
 import { toast } from "react-hot-toast";
 import { motion } from "framer-motion";
+import { updateProfile, toggle2FA } from "../services/api";
 
 const createImage = (url) =>
   new Promise((resolve, reject) => {
@@ -62,15 +63,20 @@ const getCroppedImg = async (imageSrc, pixelCrop) => {
 };
 
 const ProfilePage = () => {
-  const [user, setUser] = useState({
-    name: "Lokeshwaran",
-    email: "loki@example.com",
-    role: "Senior Developer",
-    joinDate: "January 2024",
-    avatar: null,
+  const [user, setUser] = useState(() => {
+    const savedUser = JSON.parse(localStorage.getItem("user") || "{}");
+    return {
+      name: savedUser.name || "User",
+      email: savedUser.email || "user@example.com",
+      role: savedUser.role || "Professional",
+      joinDate: "January 2024",
+      avatar: savedUser.profilePhoto || null,
+      twoFactorEnabled: savedUser.twoFactorEnabled || false,
+    };
   });
 
   const [isLoading, setIsLoading] = useState(false);
+  const [securityLoading, setSecurityLoading] = useState(false);
 
   // Cropper states
   const [imageSrc, setImageSrc] = useState(null);
@@ -96,21 +102,55 @@ const ProfilePage = () => {
       const croppedImage = await getCroppedImg(imageSrc, croppedAreaPixels);
       setUser((prev) => ({ ...prev, avatar: croppedImage }));
       setImageSrc(null); // close cropper
-      toast.success("Profile photo updated!");
+      toast.success("Profile photo updated! Save changes to apply.");
     } catch (e) {
       console.error(e);
       toast.error("Failed to crop image.");
     }
   };
 
-  const handleUpdateProfile = (e) => {
+  const handleUpdateProfile = async (e) => {
     e.preventDefault();
     setIsLoading(true);
-    // Simulate API call
-    setTimeout(() => {
-      setIsLoading(false);
+    try {
+      const { data } = await updateProfile({
+        name: user.name,
+        email: user.email,
+        profilePhoto: user.avatar,
+      });
+      localStorage.setItem("user", JSON.stringify(data.user));
+      setUser((prev) => ({
+        ...prev,
+        ...data.user,
+        avatar: data.user.profilePhoto
+      }));
       toast.success("Profile updated successfully!");
-    }, 1000);
+    } catch (err) {
+      console.error(err);
+      toast.error(err.response?.data?.message || "Failed to update profile");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleToggle2FA = async () => {
+    setSecurityLoading(true);
+    try {
+      const { data } = await toggle2FA();
+      setUser(prev => ({ ...prev, twoFactorEnabled: data.twoFactorEnabled }));
+      
+      const currentLocalUser = JSON.parse(localStorage.getItem("user") || "{}");
+      currentLocalUser.twoFactorEnabled = data.twoFactorEnabled;
+      localStorage.setItem("user", JSON.stringify(currentLocalUser));
+      
+      toast.success(data.message);
+    } catch (err) {
+      console.error("2FA Toggle Error:", err);
+      const errorMsg = err.response?.data?.message || err.message;
+      toast.error(errorMsg);
+    } finally {
+      setSecurityLoading(false);
+    }
   };
 
   return (
@@ -203,7 +243,7 @@ const ProfilePage = () => {
               </h3>
               <div className="space-y-4">
                 <div className="flex items-center gap-3">
-                  <div className="p-2 rounded-lg bg-green-100 dark:bg-green-900/20 text-green-600 dark:text-green-400">
+                  <div className={`p-2 rounded-lg ${user.twoFactorEnabled ? 'bg-green-100 dark:bg-green-900/20 text-green-600 dark:text-green-400' : 'bg-yellow-100 dark:bg-yellow-900/20 text-yellow-600 dark:text-yellow-400'}`}>
                     <Shield size={18} />
                   </div>
                   <div>
@@ -211,13 +251,19 @@ const ProfilePage = () => {
                       Two-Factor Auth
                     </p>
                     <p className="text-xs text-gray-500 dark:text-gray-400">
-                      Currently enabled
+                      {user.twoFactorEnabled ? 'Currently enabled' : 'Disabled'}
                     </p>
                   </div>
                 </div>
               </div>
-              <Button variant="outline" size="sm" className="w-full mt-4">
-                Manage Security
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="w-full mt-4"
+                onClick={handleToggle2FA}
+                isLoading={securityLoading}
+              >
+                {user.twoFactorEnabled ? 'Disable 2FA' : 'Enable 2FA'}
               </Button>
             </Card>
           </div>

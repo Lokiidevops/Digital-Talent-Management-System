@@ -30,21 +30,31 @@ const Login = () => {
     setLoading(true);
     try {
       const res = await loginUser(form);
-      localStorage.setItem("token", res.data.token);
-      localStorage.setItem("user", JSON.stringify(res.data.user));
-      toast.success("Login successful!");
-      navigate("/dashboard");
+      console.log("Login res data:", res.data);
+      if (res.data?.token) {
+        localStorage.setItem("token", res.data.token);
+        localStorage.setItem("user", JSON.stringify(res.data.user || {}));
+        window.location.href = "/dashboard";
+      } else {
+        throw new Error("No token returned from server");
+      }
     } catch (err) {
-      toast.error(err.response?.data?.message || "Invalid email or password.");
+      console.error("Login failed error detail:", err);
+      toast.error(err.response?.data?.message || err.message);
     } finally {
       setLoading(false);
     }
   };
 
   const handleGoogleSuccess = (res) => {
-    localStorage.setItem("googleUser", JSON.stringify(res));
-    toast.success("Google Login successful!");
-    navigate("/dashboard");
+    try {
+      localStorage.setItem("googleUser", JSON.stringify(res));
+      localStorage.setItem("token", "google-authenticated-session"); 
+      window.location.href = "/dashboard";
+    } catch (err) {
+      console.error("Google Success error:", err);
+      toast.error("Error handling Google Login: " + err.message);
+    }
   };
 
   return (

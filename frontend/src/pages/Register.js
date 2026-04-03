@@ -22,6 +22,7 @@ const Register = () => {
     email: "",
     password: "",
     confirmPassword: "",
+    role: "user",
   });
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -90,8 +91,9 @@ const Register = () => {
         lastName: form.lastName,
         email: form.email,
         password: form.password,
+        role: form.role,
       });
-      toast.success("Account created successfully! Please login.");
+      toast.success("Account created! Please check your email to verify your email before logging in.");
       navigate("/login");
     } catch (err) {
       toast.error(
@@ -168,6 +170,29 @@ const Register = () => {
                 onChange={handleChange}
                 required
               />
+
+              {/* Role Selection (Dev Mode) */}
+              <div className="space-y-1.5">
+                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                  Account Type (Testing Mode)
+                </label>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setForm({ ...form, role: "user" })}
+                    className={`py-2 text-sm font-medium rounded-lg border transition-all ${form.role === "user" ? "bg-primary-50 border-primary-600 text-primary-600 shadow-sm shadow-primary-100" : "bg-white border-gray-200 text-gray-500 hover:bg-gray-50"}`}
+                  >
+                    User
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setForm({ ...form, role: "admin" })}
+                    className={`py-2 text-sm font-medium rounded-lg border transition-all ${form.role === "admin" ? "bg-primary-50 border-primary-600 text-primary-600 shadow-sm shadow-primary-100" : "bg-white border-gray-200 text-gray-500 hover:bg-gray-50"}`}
+                  >
+                    Admin
+                  </button>
+                </div>
+              </div>
 
               {/* Password with show/hide */}
               <div className="flex flex-col gap-1">

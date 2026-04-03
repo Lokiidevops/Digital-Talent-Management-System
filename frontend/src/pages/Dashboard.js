@@ -81,19 +81,19 @@ const KPICard = ({ title, value, icon: Icon, trend, trendValue, color }) => (
 );
 
 const barData = [
-  { name: "Mon", tasks: 12 },
-  { name: "Tue", tasks: 19 },
-  { name: "Wed", tasks: 15 },
-  { name: "Thu", tasks: 22 },
-  { name: "Fri", tasks: 30 },
-  { name: "Sat", tasks: 10 },
-  { name: "Sun", tasks: 8 },
+  { name: "Mon", tasks: 0 },
+  { name: "Tue", tasks: 0 },
+  { name: "Wed", tasks: 0 },
+  { name: "Thu", tasks: 0 },
+  { name: "Fri", tasks: 0 },
+  { name: "Sat", tasks: 0 },
+  { name: "Sun", tasks: 0 },
 ];
 
 const pieData = [
-  { name: "Completed", value: 65, color: "#10b981" },
-  { name: "Pending", value: 25, color: "#f59e0b" },
-  { name: "Overdue", value: 10, color: "#ef4444" },
+  { name: "Completed", value: 0, color: "#10b981" },
+  { name: "Pending", value: 0, color: "#f59e0b" },
+  { name: "Overdue", value: 0, color: "#ef4444" },
 ];
 
 const Dashboard = () => {
@@ -119,34 +119,34 @@ const Dashboard = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <KPICard
           title="Total Tasks"
-          value="124"
+          value="0"
           icon={Users}
           trend="up"
-          trendValue="+12%"
+          trendValue="0%"
           color="blue"
         />
         <KPICard
           title="Completed"
-          value="86"
+          value="0"
           icon={CheckCircle}
           trend="up"
-          trendValue="+18%"
+          trendValue="0%"
           color="green"
         />
         <KPICard
           title="Pending"
-          value="24"
+          value="0"
           icon={Clock}
           trend="down"
-          trendValue="-5%"
+          trendValue="0%"
           color="yellow"
         />
         <KPICard
           title="Overdue"
-          value="14"
+          value="0"
           icon={AlertCircle}
           trend="up"
-          trendValue="+2%"
+          trendValue="0%"
           color="red"
         />
       </div>
@@ -242,66 +242,12 @@ const Dashboard = () => {
             <CardTitle className="text-lg font-semibold">
               Recent Activity
             </CardTitle>
-            <CardDescription>Latest updates from your team</CardDescription>
+            <CardDescription>No active logs found.</CardDescription>
           </div>
-          <button className="text-sm text-primary-600 font-medium hover:underline">
-            View All
-          </button>
         </CardHeader>
         <CardContent>
-          <div className="space-y-6">
-            {[
-              {
-                user: "John Doe",
-                action: "completed task",
-                target: "UI Redesign",
-                time: "2 hours ago",
-                initial: "JD",
-                color: "blue",
-              },
-              {
-                user: "Sarah Smith",
-                action: "created new task",
-                target: "API Integration",
-                time: "4 hours ago",
-                initial: "SS",
-                color: "green",
-              },
-              {
-                user: "Mike Johnson",
-                action: "commented on",
-                target: "Bug Report #102",
-                time: "Yesterday",
-                initial: "MJ",
-                color: "purple",
-              },
-            ].map((activity, i) => (
-              <div
-                key={i}
-                className="flex items-center justify-between border-b border-gray-100 dark:border-gray-800 pb-4 last:border-0 last:pb-0"
-              >
-                <div className="flex items-center gap-4">
-                  <div
-                    className={`h-10 w-10 rounded-full bg-${activity.color}-100 dark:bg-${activity.color}-900/30 flex items-center justify-center text-${activity.color}-600 dark:text-${activity.color}-400 font-bold`}
-                  >
-                    {activity.initial}
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-gray-900 dark:text-white">
-                      <span className="font-bold">{activity.user}</span>{" "}
-                      {activity.action}{" "}
-                      <span className="text-primary-600 dark:text-primary-400 font-semibold">
-                        {activity.target}
-                      </span>
-                    </p>
-                    <p className="text-xs text-gray-500 dark:text-gray-400">
-                      {activity.time}
-                    </p>
-                  </div>
-                </div>
-                <MoreVertical className="text-gray-400 h-5 w-5 cursor-pointer hover:text-gray-600" />
-              </div>
-            ))}
+          <div className="p-8 text-center text-gray-400">
+            Select a task to see recent updates or create your first one.
           </div>
         </CardContent>
       </Card>

@@ -39,12 +39,29 @@ const SidebarItem = ({ icon: Icon, label, href, active, collapsed }) => {
 
 const Sidebar = ({ collapsed, setCollapsed, mobileOpen, setMobileOpen }) => {
   const location = useLocation();
+  const [user, setUser] = React.useState(() => JSON.parse(localStorage.getItem("user") || "{}"));
+
+  React.useEffect(() => {
+    const handleUpdate = () => {
+      setUser(JSON.parse(localStorage.getItem("user") || "{}"));
+    };
+    window.addEventListener("profileUpdate", handleUpdate);
+    return () => window.removeEventListener("profileUpdate", handleUpdate);
+  }, []);
+
+  const isAdmin = user.role === "admin" || user.role === "superadmin";
 
   const menuItems = [
     { icon: LayoutDashboard, label: "Dashboard", href: "/dashboard" },
     { icon: CheckSquare, label: "Tasks", href: "/tasks" },
-    { icon: User, label: "Profile", href: "/profile" },
+    { icon: Settings, label: "Settings", href: "/settings" },
   ];
+
+  if (user.role === "superadmin") {
+    menuItems.push({ icon: Briefcase, label: "Approvals", href: "/admin-approval" });
+  }
+
+  const filteredItems = menuItems;
 
   const sidebarContent = (
     <div className="flex flex-col h-full bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800">
@@ -62,7 +79,7 @@ const Sidebar = ({ collapsed, setCollapsed, mobileOpen, setMobileOpen }) => {
 
       {/* Navigation */}
       <nav className="flex-1 px-3 space-y-1 mt-4">
-        {menuItems.map((item) => (
+        {filteredItems.map((item) => (
           <SidebarItem
             key={item.href}
             {...item}
@@ -72,15 +89,8 @@ const Sidebar = ({ collapsed, setCollapsed, mobileOpen, setMobileOpen }) => {
         ))}
       </nav>
 
-      {/* Footer / Settings */}
+      {/* Footer / Logout */}
       <div className="p-3 border-t border-gray-200 dark:border-gray-800 space-y-1">
-        <SidebarItem
-          icon={Settings}
-          label="Settings"
-          href="/settings"
-          active={location.pathname === "/settings"}
-          collapsed={collapsed}
-        />
         <button
           className={cn(
             "flex items-center gap-3 px-3 py-2 w-full rounded-lg text-gray-600 hover:bg-red-50 hover:text-red-600 transition-all duration-200 dark:text-gray-400 dark:hover:bg-red-900/10 dark:hover:text-red-400 group",

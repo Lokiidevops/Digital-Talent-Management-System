@@ -25,9 +25,12 @@ app.use((req, res, next) => {
 
 app.use("/api/auth", require("./routes/authRoutes"));
 app.use("/api/forgot", require("./routes/forgotRoutes"));
+app.use("/api/admin-approval", require("./routes/adminApprovalRoutes"));
 
 const uploadsDir = path.join(__dirname, "uploads");
+fs.mkdirSync(path.join(uploadsDir, "tasks"), { recursive: true });
 fs.mkdirSync(path.join(uploadsDir, "submissions"), { recursive: true });
+fs.mkdirSync(path.join(uploadsDir, "profiles"), { recursive: true });
 app.use("/uploads", express.static(uploadsDir));
 
 app.get("/", (req, res) => res.json({ message: "API running" }));

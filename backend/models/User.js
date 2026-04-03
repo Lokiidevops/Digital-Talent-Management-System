@@ -5,9 +5,21 @@ const userSchema = new mongoose.Schema(
   {
     role: {
       type: String,
-      enum: ["admin", "user"],
+      enum: ["admin", "user", "superadmin"],
       default: "user",
     },
+    isApproved: {
+      type: Boolean,
+      default: function() {
+        return this.role !== "admin"; 
+      },
+    },
+    isVerified: {
+      type: Boolean,
+      default: false,
+    },
+    verificationToken: String,
+    verificationTokenExpire: Date,
     name: {
       type: String,
       required: true,
@@ -27,6 +39,10 @@ const userSchema = new mongoose.Schema(
     profilePhoto: {
       type: String,
       default: "",
+    },
+    position: {
+      type: String,
+      default: "Professional",
     },
     twoFactorEnabled: {
       type: Boolean,

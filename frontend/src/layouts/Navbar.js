@@ -16,10 +16,15 @@ import { cn } from "../utils/cn";
 import { getNotifications } from "../services/api";
 
 const Navbar = ({ setMobileOpen, dark, setDark }) => {
-  const user = JSON.parse(localStorage.getItem("user") || "{}");
+  const [user, setUser] = useState(() => JSON.parse(localStorage.getItem("user") || "{}"));
   const [unreadCount, setUnreadCount] = useState(0);
 
   useEffect(() => {
+    const handleUpdate = () => {
+      setUser(JSON.parse(localStorage.getItem("user") || "{}"));
+    };
+    window.addEventListener("profileUpdate", handleUpdate);
+    
     const fetchNotifications = async () => {
       try {
         const { data } = await getNotifications();
@@ -33,7 +38,10 @@ const Navbar = ({ setMobileOpen, dark, setDark }) => {
 
     // Optional polling every 30s to keep it updated
     const intervalId = setInterval(fetchNotifications, 30000);
-    return () => clearInterval(intervalId);
+    return () => {
+      window.removeEventListener("profileUpdate", handleUpdate);
+      clearInterval(intervalId);
+    };
   }, []);
 
   return (
@@ -96,12 +104,20 @@ const Navbar = ({ setMobileOpen, dark, setDark }) => {
               {user.name || "User"}
             </span>
             <span className="text-xs text-gray-500 dark:text-gray-400 capitalize">
-              {user.role || "Admin"}
+              {user.position || "Professional"}
             </span>
           </div>
-          <button className="flex items-center gap-2 rounded-full bg-gray-100 p-0.5 hover:bg-gray-200 transition-colors dark:bg-gray-800 dark:hover:bg-gray-700">
-            <div className="h-8 w-8 rounded-full bg-primary-600 flex items-center justify-center text-white font-bold text-sm">
-              {user.name?.[0]?.toUpperCase() || "U"}
+          <button className="flex items-center gap-2 rounded-full bg-gray-100 p-0.5 hover:bg-gray-200 transition-colors dark:bg-gray-800 dark:hover:bg-gray-700 overflow-hidden">
+            <div className="h-8 w-8 rounded-full bg-primary-600 flex items-center justify-center text-white font-bold text-sm overflow-hidden">
+              {user.profilePhoto ? (
+                <img 
+                  src={user.profilePhoto.startsWith("http") ? user.profilePhoto : `http://localhost:5000${user.profilePhoto}`} 
+                  alt="U" 
+                  className="w-full h-full object-cover" 
+                />
+              ) : (
+                user.name?.[0]?.toUpperCase() || "U"
+              )}
             </div>
           </button>
         </div>

@@ -11,6 +11,10 @@ import {
   Calendar,
   AlertCircle,
   Paperclip,
+  CheckCircle2,
+  Send,
+  Eye,
+  FileText,
 } from "lucide-react";
 import {
   Card,
@@ -25,34 +29,44 @@ import DashboardLayout from "../layouts/DashboardLayout";
 import Modal from "../components/ui/Modal";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "react-hot-toast";
-import { getTasks, createTask, deleteTask, getUsers } from "../services/api";
+import { 
+  getTasks, 
+  getAllTasksAdmin, 
+  createTask, 
+  deleteTask, 
+  getUsers, 
+  updateTaskStatus, 
+  updateTaskAdmin, 
+  submitTask 
+} from "../services/api";
 
 const TaskPage = () => {
   const [tasks, setTasks] = useState([]);
   const [users, setUsers] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isSubmitModalOpen, setIsSubmitModalOpen] = useState(false);
+  const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
+  const [selectedTask, setSelectedTask] = useState(null);
   const [filterStatus, setFilterStatus] = useState("all");
   const [loading, setLoading] = useState(true);
 
-  // New task form state
-  const [newTask, setNewTask] = useState({
-    title: "",
-    priority: "medium",
-    deadline: "",
-    description: "",
-    assignedUser: "",
-  });
-  const [file, setFile] = useState(null);
+  const user = JSON.parse(localStorage.getItem("user") || "{}");
+  const isAdmin = user.role === "admin";
+
+  // Forms
+  const [newTask, setNewTask] = useState({ title: "", priority: "medium", deadline: "", description: "", assignedUser: "" });
+  const [submission, setSubmission] = useState({ text: "", file: null });
+  const [adminFile, setAdminFile] = useState(null);
 
   useEffect(() => {
     fetchTasks();
-    fetchUsers();
+    if (isAdmin) fetchUsers();
   }, []);
 
   const fetchTasks = async () => {
     try {
-      const { data } = await getTasks();
+      const { data } = isAdmin ? await getAllTasksAdmin() : await getTasks();
       setTasks(data);
     } catch (err) {
       toast.error("Failed to load tasks");
@@ -70,81 +84,13 @@ const TaskPage = () => {
     }
   };
 
-  const getPriorityBadge = (priority) => {
-    switch (priority) {
-      case "high":
-        return <Badge variant="danger">High</Badge>;
-      case "medium":
-        return <Badge variant="warning">Medium</Badge>;
-      case "low":
-        return <Badge variant="success">Low</Badge>;
-      default:
-        return <Badge variant="secondary">{priority}</Badge>;
-    }
-  };
-
-  const getStatusBadge = (status) => {
-    switch (status) {
-      case "completed":
-        return (
-          <Badge variant="success" className="rounded-md">
-            Completed
-          </Badge>
-        );
-      case "in-progress":
-        return (
-          <Badge
-            variant="default"
-            className="bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300 rounded-md"
-          >
-            In Progress
-          </Badge>
-        );
-      case "pending":
-        return (
-          <Badge variant="warning" className="rounded-md">
-            Pending
-          </Badge>
-        );
-      case "submitted":
-        return (
-          <Badge variant="success" className="bg-green-100 text-green-800 rounded-md">
-            Submitted
-          </Badge>
-        );
-      case "overdue":
-        return (
-          <Badge variant="danger" className="rounded-md">
-            Overdue
-          </Badge>
-        );
-      default:
-        return (
-          <Badge variant="secondary" className="rounded-md">
-            {status}
-          </Badge>
-        );
-    }
-  };
-
-  const filteredTasks = tasks.filter((task) => {
-    const matchesSearch = task.title
-      ?.toLowerCase()
-      .includes(searchTerm.toLowerCase());
-    const matchesStatus =
-      filterStatus === "all" || task.status === filterStatus;
-    return matchesSearch && matchesStatus;
-  });
-
-  const handleDeleteTask = async (id) => {
-    if (window.confirm("Are you sure you want to delete this task?")) {
-      try {
-        await deleteTask(id);
-        setTasks(tasks.filter((t) => t._id !== id));
-        toast.success("Task deleted successfully");
-      } catch (err) {
-        toast.error("Failed to delete task");
-      }
+  const handleStatusChange = async (taskId, newStatus) => {
+    try {
+      await updateTaskStatus(taskId, newStatus);
+      toast.success(`Status updated to ${newStatus}`);
+      fetchTasks();
+    } catch (err) {
+      toast.error("Failed to update status");
     }
   };
 
@@ -152,289 +98,282 @@ const TaskPage = () => {
     if (!newTask.title || !newTask.assignedUser) {
       return toast.error("Title and Assigned User are required");
     }
-
     try {
       const formData = new FormData();
-      formData.append("title", newTask.title);
-      formData.append("priority", newTask.priority);
-      if (newTask.deadline) formData.append("deadline", newTask.deadline);
-      formData.append("description", newTask.description);
-      formData.append("assignedUser", newTask.assignedUser);
-      if (file) {
-        formData.append("file", file);
-      }
+      Object.keys(newTask).forEach(key => formData.append(key, newTask[key]));
+      if (adminFile) formData.append("file", adminFile);
 
       await createTask(formData);
-      toast.success("Task created successfully!");
+      toast.success("Task assigned successfully!");
       setIsModalOpen(false);
       setNewTask({ title: "", priority: "medium", deadline: "", description: "", assignedUser: "" });
-      setFile(null);
+      setAdminFile(null);
       fetchTasks();
     } catch (err) {
       toast.error(err.response?.data?.message || "Error creating task");
     }
   };
 
+  const handleSubmitTask = async () => {
+    if (!submission.text && !submission.file) {
+      return toast.error("Please provide a description or upload a file");
+    }
+    try {
+      const formData = new FormData();
+      formData.append("submissionText", submission.text);
+      if (submission.file) formData.append("file", submission.file);
+
+      await submitTask(selectedTask._id, formData);
+      toast.success("Task submitted for review!");
+      setIsSubmitModalOpen(false);
+      setSubmission({ text: "", file: null });
+      fetchTasks();
+    } catch (err) {
+      toast.error("Submission failed");
+    }
+  };
+
+  const handleApproveTask = async (taskId) => {
+    try {
+      await updateTaskAdmin(taskId, { status: "completed" });
+      toast.success("Task marked as completed");
+      setIsReviewModalOpen(false);
+      fetchTasks();
+    } catch (err) {
+      toast.error("Approval failed");
+    }
+  };
+
+  const handleDeleteTask = async (id) => {
+    if (window.confirm("Are you sure you want to delete this task?")) {
+      try {
+        await deleteTask(id);
+        toast.success("Task deleted");
+        fetchTasks();
+      } catch (err) {
+        toast.error("Delete failed");
+      }
+    }
+  };
+
+  const getPriorityBadge = (priority) => {
+    const variants = { high: "danger", medium: "warning", low: "success" };
+    return <Badge variant={variants[priority] || "secondary"}>{priority}</Badge>;
+  };
+
+  const getStatusBadge = (status) => {
+    const configs = {
+      completed: { variant: "success", label: "Completed" },
+      submitted: { variant: "default", label: "Under Review", className: "bg-blue-100 text-blue-800" },
+      "in-progress": { variant: "default", label: "In Progress", className: "bg-purple-100 text-purple-800" },
+      pending: { variant: "warning", label: "Pending" },
+      overdue: { variant: "danger", label: "Overdue" },
+    };
+    const config = configs[status] || { variant: "secondary", label: status };
+    return <Badge variant={config.variant} className={`rounded-md ${config.className || ""}`}>{config.label}</Badge>;
+  };
+
+  const filteredTasks = tasks.filter(t => 
+    (t.title?.toLowerCase().includes(searchTerm.toLowerCase())) &&
+    (filterStatus === "all" || t.status === filterStatus)
+  );
+
   return (
     <DashboardLayout>
       <div className="flex flex-col gap-6">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="flex justify-between items-center">
           <div>
-            <h1 className="text-3xl font-bold tracking-tight text-gray-900 dark:text-white">
-              Tasks
-            </h1>
-            <p className="text-gray-500 dark:text-gray-400 mt-1">
-              Manage and track your team's progress.
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Tasks</h1>
+            <p className="text-gray-500 dark:text-gray-400">
+              {isAdmin ? "Oversee and manage team performance." : "Track and complete your assigned goals."}
             </p>
           </div>
-          <Button
-            onClick={() => setIsModalOpen(true)}
-            className="w-full sm:w-auto gap-2"
-          >
-            <Plus size={18} />
-            Create Task
-          </Button>
+          {isAdmin && (
+            <Button onClick={() => setIsModalOpen(true)} className="gap-2">
+              <Plus size={18} /> Assign Task
+            </Button>
+          )}
         </div>
 
-        {/* Filters and Search */}
-        <Card className="border-none shadow-sm bg-white/50 backdrop-blur-sm dark:bg-gray-900/50">
+        {/* Search & Filter */}
+        <Card className="bg-white/50 backdrop-blur-md dark:bg-gray-900/50">
           <CardContent className="p-4 flex flex-col md:flex-row gap-4">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 h-4 w-4" />
               <input
                 type="text"
-                placeholder="Search tasks..."
-                className="w-full pl-10 pr-4 py-2 rounded-lg border border-gray-200 bg-white focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 dark:border-gray-800 dark:bg-gray-950 transition-all"
+                placeholder="Search by title..."
+                className="w-full pl-10 pr-4 py-2 rounded-lg border border-gray-200 dark:border-gray-800 dark:bg-gray-950 focus:ring-2 focus:ring-primary-500"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
-            <div className="flex gap-2">
-              <select
-                className="px-3 py-2 rounded-lg border border-gray-200 bg-white focus:outline-none focus:ring-2 focus:ring-primary-500/20 dark:border-gray-800 dark:bg-gray-950"
-                value={filterStatus}
-                onChange={(e) => setFilterStatus(e.target.value)}
-              >
-                <option value="all">All Status</option>
-                <option value="pending">Pending</option>
-                <option value="in-progress">In Progress</option>
-                <option value="submitted">Submitted</option>
-                <option value="completed">Completed</option>
-                <option value="overdue">Overdue</option>
-              </select>
-              <Button variant="secondary" size="icon">
-                <Filter size={18} />
-              </Button>
-            </div>
+            <select
+              className="px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-800 dark:bg-gray-950"
+              value={filterStatus}
+              onChange={(e) => setFilterStatus(e.target.value)}
+            >
+              <option value="all">All Statuses</option>
+              {["pending", "in-progress", "submitted", "completed"].map(s => (
+                <option key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</option>
+              ))}
+            </select>
           </CardContent>
         </Card>
 
-        {/* Task Table */}
-        <Card className="overflow-hidden border-none shadow-sm">
+        {/* Task List */}
+        <Card className="overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="bg-gray-50 dark:bg-gray-800/50 border-b border-gray-200 dark:border-gray-800">
-                  <th className="px-6 py-4 text-sm font-semibold text-gray-600 dark:text-gray-300">
-                    Task Title
-                  </th>
-                  <th className="px-6 py-4 text-sm font-semibold text-gray-600 dark:text-gray-300">
-                    Priority
-                  </th>
-                  <th className="px-6 py-4 text-sm font-semibold text-gray-600 dark:text-gray-300">
-                    Status
-                  </th>
-                  <th className="px-6 py-4 text-sm font-semibold text-gray-600 dark:text-gray-300">
-                    Due Date
-                  </th>
-                  <th className="px-6 py-4 text-sm font-semibold text-gray-600 dark:text-gray-300 text-right">
-                    Actions
-                  </th>
+            <table className="w-full text-left">
+              <thead className="bg-gray-50 dark:bg-gray-800/50 border-b">
+                <tr>
+                  <th className="px-6 py-4 font-semibold">Details</th>
+                  <th className="px-6 py-4 font-semibold">Priority</th>
+                  <th className="px-6 py-4 font-semibold">Status</th>
+                  <th className="px-6 py-4 font-semibold">Deadline</th>
+                  <th className="px-6 py-4 font-semibold text-right">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
-                <AnimatePresence mode="popLayout">
-                  {loading ? (
-                    <tr>
-                      <td colSpan="5" className="px-6 py-8 text-center text-gray-500">
-                        Loading tasks...
-                      </td>
-                    </tr>
-                  ) : filteredTasks.map((task) => (
-                    <motion.tr
-                      key={task._id}
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      exit={{ opacity: 0 }}
-                      layout
-                      className="hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors group"
-                    >
-                      <td className="px-6 py-4">
-                        <div className="flex flex-col">
-                          <span className="font-medium flex items-center gap-1 text-gray-900 dark:text-white group-hover:text-primary-600 transition-colors">
-                            {task.title}
-                            {task.taskFileUrl && <Paperclip size={14} className="text-gray-400" />}
-                          </span>
-                          <span className="text-xs text-gray-500 dark:text-gray-400">
-                            Assigned to {task.assignedUser?.name || "Unassigned"}
-                          </span>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4">
-                        {getPriorityBadge(task.priority)}
-                      </td>
-                      <td className="px-6 py-4">
-                        {getStatusBadge(task.status)}
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
-                          <Calendar size={14} />
-                          {task.deadline ? new Date(task.deadline).toLocaleDateString() : "No Deadline"}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 text-right">
-                        <div className="flex justify-end gap-2">
-                          {task.taskFileUrl && (
-                            <a 
-                              href={`http://localhost:5000${task.taskFileUrl}`} 
-                              target="_blank" 
-                              rel="noopener noreferrer"
-                              className="inline-flex items-center justify-center h-8 w-8 rounded-md text-gray-500 hover:text-primary-600 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-                            >
-                              <Paperclip size={16} />
-                            </a>
-                          )}
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8 text-gray-500 hover:text-red-600"
-                            onClick={() => handleDeleteTask(task._id)}
-                          >
+                {filteredTasks.map((task) => (
+                  <tr key={task._id} className="hover:bg-gray-50/50 dark:hover:bg-gray-800/20 group animate-in fade-in duration-300">
+                    <td className="px-6 py-4">
+                      <div className="flex flex-col">
+                        <span className="font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                          {task.title}
+                          {task.taskFileUrl && <Paperclip size={14} className="text-gray-400" />}
+                        </span>
+                        <span className="text-xs text-gray-500 italic">
+                          {isAdmin ? `To: ${task.assignedUser?.name}` : "From: Admin"}
+                        </span>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4">{getPriorityBadge(task.priority)}</td>
+                    <td className="px-6 py-4">{getStatusBadge(task.status)}</td>
+                    <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">
+                      {task.deadline ? new Date(task.deadline).toLocaleDateString() : "No deadline"}
+                    </td>
+                    <td className="px-6 py-4 text-right">
+                      <div className="flex justify-end gap-2">
+                        {!isAdmin && task.status === "pending" && (
+                          <Button variant="secondary" size="sm" onClick={() => handleStatusChange(task._id, "in-progress")}>
+                            Start
+                          </Button>
+                        )}
+                        {!isAdmin && (task.status === "pending" || task.status === "in-progress") && (
+                          <Button size="sm" className="gap-1 bg-green-600 hover:bg-green-700" onClick={() => { setSelectedTask(task); setIsSubmitModalOpen(true); }}>
+                            <Send size={14} /> Submit
+                          </Button>
+                        )}
+                        {isAdmin && task.status === "submitted" && (
+                          <Button variant="success" size="sm" className="gap-1" onClick={() => { setSelectedTask(task); setIsReviewModalOpen(true); }}>
+                            <Eye size={14} /> Review
+                          </Button>
+                        )}
+                        {isAdmin && (
+                          <Button variant="ghost" size="icon" className="text-red-500 hover:bg-red-50" onClick={() => handleDeleteTask(task._id)}>
                             <Trash2 size={16} />
                           </Button>
-                        </div>
-                      </td>
-                    </motion.tr>
-                  ))}
-                </AnimatePresence>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                ))}
               </tbody>
             </table>
           </div>
-          {!loading && filteredTasks.length === 0 && (
-            <div className="p-12 text-center">
-              <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-400 mb-4">
-                <AlertCircle size={24} />
-              </div>
-              <p className="text-gray-500 dark:text-gray-400 font-medium">
-                No tasks found matching your criteria.
-              </p>
-            </div>
+          {filteredTasks.length === 0 && !loading && (
+            <div className="p-12 text-center text-gray-500">No tasks found. Try relaxing your filters.</div>
           )}
-          <div className="px-6 py-4 border-t border-gray-100 dark:border-gray-800 flex items-center justify-between bg-gray-50/50 dark:bg-gray-800/20">
-            <span className="text-sm text-gray-500 dark:text-gray-400">
-              Showing{" "}
-              <span className="font-semibold text-gray-900 dark:text-white">
-                {filteredTasks.length}
-              </span>{" "}
-              tasks
-            </span>
-            <div className="flex gap-2">
-              <Button variant="secondary" size="sm" className="gap-1">
-                <ChevronLeft size={16} /> Previous
-              </Button>
-              <Button variant="secondary" size="sm" className="gap-1">
-                Next <ChevronRight size={16} />
-              </Button>
-            </div>
-          </div>
         </Card>
       </div>
 
-      {/* Create Task Modal */}
-      <Modal
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        title="Create New Task"
-        footer={
-          <>
-            <Button variant="secondary" onClick={() => setIsModalOpen(false)}>
-              Cancel
-            </Button>
-            <Button onClick={handleCreateTask}>Create Task</Button>
-          </>
-        }
-      >
+      {/* Admin: Create Task Modal */}
+      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="Assign New Task">
         <div className="space-y-4">
-          <Input 
-            label="Task Title" 
-            placeholder="Enter task name" 
-            value={newTask.title} 
-            onChange={(e) => setNewTask({...newTask, title: e.target.value})} 
-          />
-          
+          <Input label="Task Title" placeholder="What needs to be done?" value={newTask.title} onChange={(e) => setNewTask({...newTask, title: e.target.value})} />
           <div className="space-y-1.5">
-            <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
-              Assigned User
-            </label>
-            <select 
-              className="w-full h-10 px-3 py-2 rounded-md border border-gray-200 bg-white text-sm dark:border-gray-800 dark:bg-gray-950"
-              value={newTask.assignedUser}
-              onChange={(e) => setNewTask({...newTask, assignedUser: e.target.value})}
-            >
-              <option value="">Select a user</option>
-              {users.map(u => (
-                <option key={u._id} value={u._id}>{u.name} ({u.email})</option>
-              ))}
+            <label className="text-sm font-medium">Assign To</label>
+            <select className="w-full px-3 py-2 rounded-md border dark:bg-gray-950" value={newTask.assignedUser} onChange={(e) => setNewTask({...newTask, assignedUser: e.target.value})}>
+              <option value="">Select Talent...</option>
+              {users.map(u => <option key={u._id} value={u._id}>{u.name} ({u.email})</option>)}
             </select>
           </div>
-
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">
-              <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                Priority
-              </label>
-              <select 
-                className="w-full h-10 px-3 py-2 rounded-md border border-gray-200 bg-white text-sm dark:border-gray-800 dark:bg-gray-950"
-                value={newTask.priority}
-                onChange={(e) => setNewTask({...newTask, priority: e.target.value})}
-              >
+              <label className="text-sm font-medium">Priority</label>
+              <select className="w-full h-10 px-3 border rounded-md dark:bg-gray-950" value={newTask.priority} onChange={(e) => setNewTask({...newTask, priority: e.target.value})}>
                 <option value="low">Low</option>
                 <option value="medium">Medium</option>
                 <option value="high">High</option>
               </select>
             </div>
-            <Input 
-              label="Due Date" 
-              type="date" 
-              value={newTask.deadline}
-              onChange={(e) => setNewTask({...newTask, deadline: e.target.value})}
-            />
+            <Input label="Deadline" type="date" value={newTask.deadline} onChange={(e) => setNewTask({...newTask, deadline: e.target.value})} />
           </div>
-          
           <div className="space-y-1.5">
-            <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
-              Upload File (Image/Document)
-            </label>
-            <input 
-              type="file" 
-              accept=".jpg,.jpeg,.png,.gif,.pdf,.doc,.docx"
-              onChange={(e) => setFile(e.target.files[0])}
-              className="w-full px-3 py-2 rounded-md border border-gray-200 bg-white text-sm dark:border-gray-800 dark:bg-gray-950"
-            />
+            <label className="text-sm font-medium">Resources / Instructions (File)</label>
+            <input type="file" onChange={(e) => setAdminFile(e.target.files[0])} className="w-full text-sm" />
           </div>
-
           <div className="space-y-1.5">
-            <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
-              Description
-            </label>
-            <textarea
-              className="w-full min-h-[100px] px-3 py-2 rounded-md border border-gray-200 bg-white text-sm dark:border-gray-800 dark:bg-gray-950 focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500"
-              placeholder="What needs to be done?"
-              value={newTask.description}
-              onChange={(e) => setNewTask({...newTask, description: e.target.value})}
-            />
+            <label className="text-sm font-medium">Detailed Description</label>
+            <textarea className="w-full p-2 border rounded-md min-h-[100px] dark:bg-gray-950" value={newTask.description} onChange={(e) => setNewTask({...newTask, description: e.target.value})} />
+          </div>
+          <div className="flex gap-2 justify-end pt-4">
+            <Button variant="secondary" onClick={() => setIsModalOpen(false)}>Cancel</Button>
+            <Button onClick={handleCreateTask}>Send Out Task</Button>
           </div>
         </div>
+      </Modal>
+
+      {/* User: Submit Task Modal */}
+      <Modal isOpen={isSubmitModalOpen} onClose={() => setIsSubmitModalOpen(false)} title="Submit Work Evidence">
+        <div className="space-y-4">
+          <p className="text-sm text-gray-500">Provide details of your completed work for admin review.</p>
+          <div className="space-y-1.5">
+            <label className="text-sm font-medium">Submission Notes</label>
+            <textarea className="w-full p-2 border rounded-md min-h-[150px] dark:bg-gray-950" placeholder="Describe what you've accomplished..." value={submission.text} onChange={(e) => setSubmission({...submission, text: e.target.value})} />
+          </div>
+          <div className="space-y-1.5">
+            <label className="text-sm font-medium">Upload File / Screenshot</label>
+            <input type="file" onChange={(e) => setSubmission({...submission, file: e.target.files[0]})} className="w-full text-sm" />
+          </div>
+          <div className="flex gap-2 justify-end pt-4">
+            <Button variant="secondary" onClick={() => setIsSubmitModalOpen(false)}>Cancel</Button>
+            <Button onClick={handleSubmitTask} className="bg-green-600 hover:bg-green-700">Submit Work</Button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Admin: Review Submission Modal */}
+      <Modal isOpen={isReviewModalOpen} onClose={() => setIsReviewModalOpen(false)} title="Review Submission">
+        {selectedTask && (
+          <div className="space-y-6">
+            <div>
+              <h4 className="text-sm font-semibold text-gray-500 uppercase">Task Context</h4>
+              <p className="text-lg font-bold">{selectedTask.title}</p>
+              <p className="text-sm text-gray-600 mt-1">{selectedTask.description}</p>
+            </div>
+            <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-xl">
+              <h4 className="text-sm font-semibold text-gray-500 uppercase flex items-center gap-2">
+                <FileText size={16} /> Submission Details
+              </h4>
+              <p className="mt-2 text-gray-900 dark:text-white whitespace-pre-wrap">{selectedTask.submissionText || "No text provided."}</p>
+              {selectedTask.submissionFileUrl && (
+                <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+                  <a href={`http://localhost:5000${selectedTask.submissionFileUrl}`} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 p-2 bg-white dark:bg-gray-950 rounded border text-primary-600 hover:underline">
+                    <Paperclip size={16} /> View Attached Evidence
+                  </a>
+                </div>
+              )}
+            </div>
+            <div className="flex gap-3 justify-end">
+              <Button variant="secondary" onClick={() => setIsReviewModalOpen(false)}>Later</Button>
+              <Button onClick={() => handleApproveTask(selectedTask._id)} className="bg-green-600 hover:bg-green-700 gap-2">
+                <CheckCircle2 size={18} /> Approve & Complete
+              </Button>
+            </div>
+          </div>
+        )}
       </Modal>
     </DashboardLayout>
   );

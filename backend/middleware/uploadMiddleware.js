@@ -4,7 +4,9 @@ const path = require("path");
 // Configure storage
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
-    cb(null, path.join(__dirname, "../uploads/tasks"));
+    const isSubmission = req.url.includes("/submit/");
+    const isProfile = req.url.includes("/update-profile");
+    cb(null, path.join(__dirname, "../uploads", isProfile ? "profiles" : (isSubmission ? "submissions" : "tasks")));
   },
   filename: function (req, file, cb) {
     const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
@@ -26,7 +28,8 @@ const fileFilter = (req, file, cb) => {
   if (mimetype && extname) {
     return cb(null, true);
   } else {
-    cb("Error: Allow only Images and Documents!");
+    console.error("Multer Filter Error: Invalid file type", file.mimetype, path.extname(file.originalname));
+    cb(new Error("Error: Allow only Images and Documents!"));
   }
 };
 
